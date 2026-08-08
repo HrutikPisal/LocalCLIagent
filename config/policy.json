@@ -1,0 +1,26 @@
+{
+  "workspace_subpath": "Projects",
+  "protected_path_names": [
+    "Windows",
+    "Program Files",
+    "Program Files (x86)",
+    "System32",
+    "AppData"
+  ],
+  "dangerous_patterns": [
+    "format",
+    "shutdown",
+    "diskpart",
+    "regedit",
+    "bcdedit",
+    "cipher",
+    "taskkill",
+    "del Windows",
+    "rm -rf",
+    "rmdir /s",
+    "Remove-Item -Recurse -Force C:\\\\Windows"
+  ],
+  "max_file_read_bytes": 1048576,
+  "max_python_output_chars": 10000,
+  "command_timeout_seconds": 30
+}

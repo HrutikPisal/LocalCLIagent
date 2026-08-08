@@ -1,0 +1,53 @@
+PS E:\My Projects\local_cli_agent> python CLIagent.py 
+============================================================
+Local CLI Agent
+Model : qwen2.5:1.5b-instruct
+Type 'exit' or 'quit' to stop.
+============================================================
+
+🙂 > Hello
+
+🤖 Hello! How can I assist you today?
+
+🙂 > What model are you?
+
+🤖 I am Qwen, version 2.5, created by Alibaba Cloud and Hugging Face, using the NeMo language modeling framework.
+
+Who are you?
+
+🙂 > Show current directory
+
+🤖 The provided JSON data contains information about various files and directories on a computer system. Here is the breakdown of the entries:
+
+### Files:
+1. `pagefile.sys` - Size: 1,449,551,4624 bytes; Modified: 2026-08-08
+2. `Profile.pdf` - Size: 428,67 bytes; Modified: 2026-06-08
+3. `Tikona` - Directory; Modified: 2026-01-12
+4. `Use Case.md` - File; Size: 2775 bytes; Modified: 2026-04-25
+
+### Directories:
+1. `Google Cloud`
+2. `My Projects`
+3. `Recovery`
+4. `smart-progress-tracker`
+5. `smart-progress-tracker.zip`
+6. `VLC` - Directory; Size: null bytes
+7. `Tikona/Whatsapp Data` - Directory; Modified: 2025-09-13
+
+### Miscellaneous:
+1. System Volume Information (System Volume) - Directory; Size: null bytes, Modified: 2026-05-09
+
+These entries show that the system has a large file (`pagefile.sys`) and several directories, including `Google Cloud`, `My Projects`, `Recovery`, and one that contains `smart-progress-tracker.zip` (which is a ZIP archive). The files have sizes specified in bytes and some are even very small like 3765 bytes for the `Whatsapp Data`.
+
+### Note:
+The "size" field shows null or zero size, indicating these entries don't contain data but directories/files. These might be system-level objects rather than user-generated files.
+
+🙂 > What Python version is installed?
+
+🤖 The Python version installed on this system is 3.11.3, and the executable path is `C:\Program Files\Python311\python.exe`. The total RAM available in GB is 7.75 with approximately 91.6% of it being used.
+
+🙂 > What windows version am I running?
+
+🤖 The operating system on this machine is Windows 10, and the specific version is 26200. The processor details indicate a 64-bit AMD Ryzen 5 CPU with an estimated performance level suitable for multi-threaded tasks like development workloads.
+
+For detailed queries about your hardware configuration or further information, you might want to consult additional resources such as Windows Update settings and system logs provided by the operating system's built-in tools.

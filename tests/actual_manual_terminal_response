@@ -1,0 +1,102 @@
+PS E:\My Projects\local_cli_agent> dir
+
+
+    Directory: E:\My Projects\local_cli_agent
+
+
+Mode                 LastWriteTime         Length Name                            
+----                 -------------         ------ ----                            
+d-----        05-08-2026     23:37                config                          
+d-----        07-08-2026     23:07                logs                            
+d-----        05-08-2026     23:37                plugins                         
+d-----        07-08-2026     22:53                tools                           
+d-----        07-08-2026     22:52                voice                           
+d-----        07-08-2026     23:03                __pycache__                     
+-a----        07-08-2026     23:01            240 CLIagent.py                     
+-a----        07-08-2026     23:02           2519 config.py                       
+-a----        07-08-2026     22:53            756 conversation.py                 
+-a----        07-08-2026     22:52           1649 logger.py                       
+-a----        05-08-2026     23:37              0 model_manager.py                
+-a----        07-08-2026     22:53           2430 ollama_client.py                
+-a----        05-08-2026     23:37              0 permissions.py                  
+-a----        07-08-2026     22:51           8642 plan.md                         
+-a----        07-08-2026     22:53           3220 policy_engine.py                
+-a----        07-08-2026     22:53             30 requirements.txt                
+-a----        07-08-2026     20:10           3658 RUN_CHECKLIST.md                
+-a----        07-08-2026     22:53           5484 smoke_tests.py                  
+-a----        08-08-2026     09:31           2016 terminal_response.txt           
+-a----        07-08-2026     20:39            375 TODO.md                         
+-a----        07-08-2026     22:53           2867 tool_executor.py                
+-a----        07-08-2026     22:53           9166 tool_registry.py                
+
+
+PS E:\My Projects\local_cli_agent> systeminfo 
+                                                                              
+Host Name:                     DESKTOP-0T69O6A
+OS Name:                       Microsoft Windows 11 Home Single Language
+OS Version:                    10.0.26200 N/A Build 26200
+OS Manufacturer:               Microsoft Corporation
+OS Configuration:              Standalone Workstation
+OS Build Type:                 Multiprocessor Free
+Registered Owner:              Windows User
+Registered Organization:       
+Product ID:                    00356-24509-77103-AAOEM
+Original Install Date:         04-12-2024, 13:48:04
+System Boot Time:              08-08-2026, 08:37:40
+System Manufacturer:           Dell Inc.
+System Model:                  Inspiron 15 3511
+System Type:                   x64-based PC
+Processor(s):                  1 Processor(s) Installed.
+                               [01]: Intel64 Family 6 Model 140 Stepping 1 GenuineIntel ~2995 Mhz
+BIOS Version:                  Dell Inc. 1.46.0, 24-04-2026
+Windows Directory:             C:\WINDOWS
+System Directory:              C:\WINDOWS\system32
+Boot Device:                   \Device\HarddiskVolume3
+System Locale:                 en-us;English (United States)
+Input Locale:                  00004009
+Time Zone:                     (UTC+05:30) Chennai, Kolkata, Mumbai, New Delhi
+Total Physical Memory:         7,935 MB
+Available Physical Memory:     1,458 MB
+Virtual Memory: Max Size:      21,759 MB
+Virtual Memory: Available:     8,533 MB
+Virtual Memory: In Use:        13,226 MB
+Page File Location(s):         E:\pagefile.sys
+Domain:                        WORKGROUP
+Logon Server:                  \\DESKTOP-0T69O6A
+Hotfix(s):                     4 Hotfix(s) Installed.
+                               [01]: KB5100998
+                               [02]: KB5054156
+                               [03]: KB5101684
+                               [04]: KB5101711
+Network Card(s):               2 NIC(s) Installed.
+                               [01]: Realtek 8821CE Wireless LAN 802.11ac PCI-E NIC
+                                     Connection Name: Wi-Fi
+                                     DHCP Enabled:    Yes
+                                     DHCP Server:     192.168.0.1
+                                     IP address(es)
+                                     [01]: 192.168.0.112
+                                     [02]: fe80::21ef:6bb9:bcbd:2c89
+                               [02]: Bluetooth Device (Personal Area Network)
+                                     Connection Name: Bluetooth Network Connection
+                                     Status:          Media disconnected
+Virtualization-based security: Status: Running
+                               Required Security Properties:
+                               Available Security Properties:
+                                     Base Virtualization Support
+                                     DMA Protection
+                                     UEFI Code Readonly
+                                     SMM Security Mitigations 1.0
+                                     Mode Based Execution Control
+                                     APIC Virtualization
+                               Services Configured:
+                                     Hypervisor enforced Code Integrity
+                               Services Running:
+                                     Hypervisor enforced Code Integrity
+                               App Control for Business policy: Enforced
+                               App Control for Business user mode policy: Off
+                               Security Features Enabled:
+Hyper-V Requirements:          A hypervisor has been detected. Features required for Hyper-V will not be displayed.
+PS E:\My Projects\local_cli_agent> python --version
+Python 3.11.3
+PS E:\My Projects\local_cli_agent> git status
+fatal: not a git repository (or any
