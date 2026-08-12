@@ -54,6 +54,18 @@ TESTS = [
         "expect_response_contains": ["3."],
         "expect_tools": ["system_info", "run_python"],
     },
+    {
+        "name": "Plain greeting should not call tools",
+        "question": "Hello",
+        "expect_response_contains": None,
+        "expect_tools": [],
+    },
+    {
+        "name": "Small talk should not call tools",
+        "question": "Thanks, that's helpful!",
+        "expect_response_contains": None,
+        "expect_tools": [],
+    },
 ]
 
 
@@ -125,6 +137,11 @@ def run_smoke_tests():
             if not any(kw.lower() in final_response.lower() for kw in test["expect_response_contains"]):
                 passed = False
                 fail_reason = f"Response missing keywords: {test['expect_response_contains']}"
+
+        if passed and test["expect_tools"] == []:
+            if tool_calls:
+                passed = False
+                fail_reason = f"Expected no tool calls, got {tool_calls}"
 
         if passed and test["expect_tools"]:
             if not tool_calls:

@@ -1,0 +1,41 @@
+Test ID: T006
+Category: Filesystem-Search
+Question: Search for nothing in the Python files.
+
+======================================================================
+RESPONSE:
+======================================================================
+
+============================================================
+[BOT] Ollama Setup
+============================================================
+
+[CHECK] Checking Ollama server...
+[OK] Ollama server is running
+
+[CHECK] Checking model: qwen2.5:3b
+[ERROR] Model 'qwen2.5:3b' not found
+[PULL] Pulling model: qwen2.5:3b
+   This may take 1-5 minutes depending on internet speed...
+[OK] Model 'qwen2.5:3b' pulled successfully
+
+[OK] Ollama setup complete!
+============================================================
+
+[START] Starting CLI Agent...
+
+============================================================
+Local CLI Agent
+Model : qwen2.5:3b
+Type 'exit' or 'quit' to stop.
+============================================================
+
+[USER] > [TOOL] Calling: search_text
+
+[AGENT] It seems like there was an error because the query for searching text cannot be empty. Please provide a specific search query or pattern so I can help you with your request.
+
+[USER] > Goodbye.
+
+
+======================================================================
+Test conducted: 2026-08-08 17:02:10

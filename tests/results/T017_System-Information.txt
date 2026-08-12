@@ -1,0 +1,51 @@
+Test ID: T017
+Category: System-Information
+Question: What OS, CPU, and RAM does this machine have?
+
+======================================================================
+RESPONSE:
+======================================================================
+
+============================================================
+[BOT] Ollama Setup
+============================================================
+
+[CHECK] Checking Ollama server...
+[OK] Ollama server is running
+
+[CHECK] Checking model: qwen2.5:3b
+[ERROR] Model 'qwen2.5:3b' not found
+[PULL] Pulling model: qwen2.5:3b
+   This may take 1-5 minutes depending on internet speed...
+[OK] Model 'qwen2.5:3b' pulled successfully
+
+[OK] Ollama setup complete!
+============================================================
+
+[START] Starting CLI Agent...
+
+============================================================
+Local CLI Agent
+Model : qwen2.5:3b
+Type 'exit' or 'quit' to stop.
+============================================================
+
+[USER] > [TOOL] Calling: system_info
+
+[AGENT] This machine is running Windows 11 (OS version: 10.0.26200), a 64-bit OS ("AMD64").
+
+The CPU details are as follows:
+- Processor: Intel64 Family 6 Model 140 Stepping 1, GenuineIntel
+- Number of processors: 4
+
+Regarding RAM, the total available is approximately **7.75 GB** and currently used at around **91.2%**, leaving only about **0.68 GB** free.
+
+The Python version installed is **3.11.3**, executed from "C:\\Program Files\\Python311".
+
+Lastly, my current working directory is set to E:\My Projects\local_cli_agent.
+
+[USER] > Goodbye.
+
+
+======================================================================
+Test conducted: 2026-08-08 17:05:51

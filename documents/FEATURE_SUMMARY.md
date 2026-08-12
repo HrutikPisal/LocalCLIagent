@@ -254,3 +254,93 @@ The CLI Agent is now:
 - **More robust** — Clear error messages and graceful fallbacks
 
 Users can simply run `python CLIagent.py` and the agent handles the rest. 🎉
+
+---
+
+## Feature 3: New Tool Implementations (August 2026) ✅
+
+### What's New
+Added **23 new tools** across 8 modules, expanding the agent's capabilities from file/git operations to system diagnostics, process management, and terminal execution.
+
+### New Tools by Category
+
+**Network & Diagnostics (4 tools)**
+- `network_info` — Get hostname, FQDN, and local IP addresses
+- `ping` — Test connectivity to hosts with cross-platform support
+- `dns_lookup` — Resolve hostnames to IP addresses
+- `check_port` — Check if a port is open on a host
+
+**File Editing (3 tools)**
+- `edit_file` — Find and replace text in files
+- `insert_line` — Insert a line at a specific line number
+- `delete_line` — Delete a line at a specific line number
+
+**Terminal Execution (3 tools)**
+- `run_command` — Execute shell commands with output capture
+- `get_output` — Execute and return only stdout
+- `execute_command` — Execute with full stdout/stderr capture
+
+**Process Management (4 tools)**
+- `list_processes` — List all running processes
+- `find_process_by_name` — Search processes by name pattern
+- `get_process_info` — Get detailed process information
+- `kill_process` — Terminate a process (dangerous, requires approval)
+
+**Windows Services (5 tools)**
+- `list_services` — List all Windows services
+- `get_service_status` — Get service status (running/stopped)
+- `start_service` — Start a Windows service
+- `stop_service` — Stop a Windows service
+- `restart_service` — Restart a Windows service
+
+**Package Management (3 tools)**
+- `install_package` — Install Python packages via pip
+- `install_requirements` — Install from requirements.txt file
+- `list_installed_packages` — List all installed packages
+
+**Tools Discovery (1 tool)**
+- `get_tool_info` — Get categorized list of all available tools
+
+### Implementation Details
+
+**Cross-Platform Support**
+- Network tools use platform detection for ping command (`-n` for Windows, `-c` for Unix)
+- Service tools restricted to Windows with graceful fallback on other platforms
+- Terminal execution supports both shell and non-shell modes
+
+**Permission Levels**
+- Read-only tools (network, process info): Auto-approved
+- System write (install, service control): Requires user approval
+- Dangerous (kill_process): Requires typed confirmation
+
+**Error Handling**
+- Optional dependencies (psutil) with helpful messages if missing
+- Timeouts enforced per config.policy.json
+- Path validation using existing security infrastructure
+
+### Testing Status
+- ✅ All 14 smoke tests passing
+- ✅ 43 total tools now registered
+- ✅ Zero regressions in existing functionality
+
+### Files Added/Modified
+**New Tool Files (8)**
+- `tools/tools.py` — Tool discovery
+- `tools/network_info.py` — Network diagnostics
+- `tools/edit_file.py` — File editing
+- `tools/terminal_read.py` — Terminal execution
+- `tools/process_manager.py` — Process management
+- `tools/service_manager.py` — Service management
+- `tools/install_package.py` — Package installation
+
+**Deleted Files (5 - redundant stubs)**
+- `tools/copy_file.py` — Functionality in delete_file.py
+- `tools/move_file.py` — Functionality in delete_file.py
+- `tools/git_log.py` — Functionality in git_status.py
+- `model_manager.py` — Functionality in config.py
+- `permissions.py` — Functionality in policy_engine.py
+
+**Updated Files**
+- `tool_registry.py` — Added 23 new tools (7 imports, 23 TOOL_MAP entries, 23 schemas)
+- `README.md` — Updated tool list and documentation
+- `CLAUDE.md` — Comprehensive guidance for future developers

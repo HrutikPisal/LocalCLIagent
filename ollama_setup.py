@@ -45,7 +45,7 @@ def is_ollama_running() -> bool:
 
 def start_ollama_server() -> bool:
     """Attempt to start Ollama server."""
-    print("🔄 Starting Ollama server...")
+    print("[...] Starting Ollama server...")
 
     try:
         if sys.platform == "win32":
@@ -53,34 +53,34 @@ def start_ollama_server() -> bool:
         else:
             subprocess.Popen(["ollama", "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-        print("⏳ Waiting for Ollama server to start...")
+        print("[WAIT] Waiting for Ollama server to start...")
         for i in range(15):
             time.sleep(1)
             if is_ollama_running():
-                print("✅ Ollama server started successfully")
+                print("[OK] Ollama server started successfully")
                 return True
-        print("⚠️  Ollama server startup timed out after 15 seconds")
+        print("[WARN] Ollama server startup timed out after 15 seconds")
         return False
 
     except FileNotFoundError:
-        print("❌ Ollama command not found. Please install Ollama from https://ollama.com")
+        print("[ERROR] Ollama command not found. Please install Ollama from https://ollama.com")
         return False
     except Exception as e:
-        print(f"❌ Failed to start Ollama server: {e}")
+        print(f"[ERROR] Failed to start Ollama server: {e}")
         return False
 
 
 def pull_model(model_name: str) -> bool:
     """Pull the specified model from Ollama."""
-    print(f"📥 Pulling model: {model_name}")
+    print(f"[PULL] Pulling model: {model_name}")
 
     try:
         print(f"   This may take 1-5 minutes depending on internet speed...")
         ollama.pull(model_name)
-        print(f"✅ Model '{model_name}' pulled successfully")
+        print(f"[OK] Model '{model_name}' pulled successfully")
         return True
     except Exception as e:
-        print(f"❌ Failed to pull model '{model_name}': {e}")
+        print(f"[ERROR] Failed to pull model '{model_name}': {e}")
         return False
 
 
@@ -103,32 +103,32 @@ def setup_ollama() -> bool:
     Returns True if setup succeeded, False if setup failed and user should handle manually.
     """
     print("=" * 60)
-    print("🤖 Ollama Setup")
+    print("[BOT] Ollama Setup")
     print("=" * 60)
 
     model_name = get_default_model()
 
-    print(f"\n📍 Checking Ollama server...")
+    print(f"\n[CHECK] Checking Ollama server...")
     if is_ollama_running():
-        print("✅ Ollama server is running")
+        print("[OK] Ollama server is running")
     else:
-        print("❌ Ollama server not running")
+        print("[ERROR] Ollama server not running")
         if not start_ollama_server():
-            print("\n⚠️  Could not start Ollama server.")
+            print("\n[WARN]  Could not start Ollama server.")
             print("   Manual fix: Open a terminal and run: ollama serve")
             return False
 
-    print(f"\n📍 Checking model: {model_name}")
+    print(f"\n[CHECK] Checking model: {model_name}")
     if model_exists(model_name):
-        print(f"✅ Model '{model_name}' is downloaded")
+        print(f"[OK] Model '{model_name}' is downloaded")
     else:
-        print(f"❌ Model '{model_name}' not found")
+        print(f"[ERROR] Model '{model_name}' not found")
         if not pull_model(model_name):
-            print("\n⚠️  Could not pull model.")
+            print("\n[WARN]  Could not pull model.")
             print(f"   Manual fix: Run in terminal: ollama pull {model_name}")
             return False
 
-    print("\n✅ Ollama setup complete!")
+    print("\n[OK] Ollama setup complete!")
     print("=" * 60)
     return True
 

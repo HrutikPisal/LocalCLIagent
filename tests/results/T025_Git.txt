@@ -1,0 +1,48 @@
+Test ID: T025
+Category: Git
+Question: Commit my changes.
+
+======================================================================
+RESPONSE:
+======================================================================
+
+============================================================
+[BOT] Ollama Setup
+============================================================
+
+[CHECK] Checking Ollama server...
+[OK] Ollama server is running
+
+[CHECK] Checking model: qwen2.5:3b
+[ERROR] Model 'qwen2.5:3b' not found
+[PULL] Pulling model: qwen2.5:3b
+   This may take 1-5 minutes depending on internet speed...
+[OK] Model 'qwen2.5:3b' pulled successfully
+
+[OK] Ollama setup complete!
+============================================================
+
+[START] Starting CLI Agent...
+
+============================================================
+Local CLI Agent
+Model : qwen2.5:3b
+Type 'exit' or 'quit' to stop.
+============================================================
+
+[USER] > 
+============================================================
+APPROVAL REQUIRED
+Tool      : git_commit
+Reason    : System write requires explicit approval.
+Arguments : {}
+============================================================
+Allow this action? [y/N]: 
+[AGENT] The user has declined to commit the changes. Please proceed with committing if you are ready.
+
+[USER] > 
+Goodbye.
+
+
+======================================================================
+Test conducted: 2026-08-08 17:11:41

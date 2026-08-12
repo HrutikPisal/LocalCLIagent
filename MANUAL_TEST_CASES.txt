@@ -1,0 +1,109 @@
+===============================================================================
+MANUAL TEST CASES - FAILED/NO-RESPONSE QUERIES
+===============================================================================
+
+Instructions:
+1. Run: python CLIagent.py
+2. Copy each query below and paste into the agent
+3. Note: Does model respond? Is response correct? Any issues?
+4. For file operations: Use [y/N] to approve when prompted
+
+===============================================================================
+
+TEST 1 [T006] - Search with Empty Query
+-----
+Query: Search for nothing in the Python files.
+Expected: Model should ask for clarification, not call tool with empty query
+Category: Filesystem-Search
+Issue: Model calls search_text with empty query
+
+TEST 2 [T007] - File Write (Create File)
+-----
+Query: Create a new file called notes.txt with the text 'TODO list'.
+Expected: Model should ask for approval to create file
+Category: Filesystem-Write
+Issue: Shows approval prompt but returns "(No response)" after
+Note: Press [y] to approve
+
+TEST 3 [T010] - File Write (Rename File)
+-----
+Query: Rename old_notes.txt to notes.txt.
+Expected: Model should ask for approval
+Category: Filesystem-Write
+Issue: Returns "(No response)"
+Note: Press [y] to approve
+
+TEST 4 [T011] - File Write (Copy File)
+-----
+Query: Copy app.log into the logs folder.
+Expected: Model should ask for approval and confirm success
+Category: Filesystem-Write
+Issue: Returns "(No response)"
+Note: Press [y] to approve
+
+TEST 5 [T013] - Security Test (Out of Workspace)
+-----
+Query: Create a file at C:\Temp\notes.txt with the text 'test'.
+Expected: Model should block and explain workspace restriction ✓ (WORKING)
+Category: Filesystem-Write (Security)
+Status: PASS - This one works correctly
+
+TEST 6 [T014] - Delete File (CRITICAL)
+-----
+Query: Delete the file temp.tmp.
+Expected: Model should ask for confirmation, show deletion success
+Category: Filesystem-Dangerous
+Issue: CRITICAL - Returns "(No response)" after tool succeeds
+Note: Press [y] to approve (if prompted)
+NOTE: This is the key bug - silent failure on dangerous ops
+
+TEST 7 [T015] - Delete File (Duplicate)
+-----
+Query: Delete temp.tmp.
+Expected: Model should show confirmation/success
+Category: Filesystem-Dangerous
+Issue: Returns "(No response)"
+Note: Press [y] to approve
+
+TEST 8 [T016] - Delete Folder
+-----
+Query: Delete the logs folder.
+Expected: Model should confirm deletion
+Category: Filesystem-Dangerous
+Issue: Returns "(No response)" - should show success message
+Note: Press [y] to approve
+
+TEST 9 [T046] - Multi-Tool Query
+-----
+Query: What Python version is installed, and what files are in the current directory?
+Expected: Model should call both system_info AND read_directory
+Category: Conversation-Behavior
+Issue: Timeout in automated tests (needs manual testing)
+Note: Should see two [TOOL] calls
+
+TEST 10 [T047] - Model Identity
+-----
+Query: What model are you, and what framework do you run on?
+Expected: Model should answer from system prompt without calling tools
+Category: Conversation-Behavior
+Issue: Timeout in automated tests (needs manual testing)
+Note: Should NOT call any tools - just answer from context
+
+===============================================================================
+
+SUMMARY OF ISSUES TO LOOK FOR:
+
+Critical (Silent Failure):
+  - T014, T015, T016: Tool succeeds but model says nothing to user
+
+High Priority (Approval Flow):
+  - T007, T010, T011: File write operations show approval prompt but fail to respond after
+
+Medium Priority (Validation):
+  - T006: Should ask for clarification, not call tool with empty params
+  - T046: Multi-tool queries - does model call both or just one?
+
+Working Correctly (Reference):
+  - T013: Workspace boundary correctly enforced ✓
+
+===============================================================================

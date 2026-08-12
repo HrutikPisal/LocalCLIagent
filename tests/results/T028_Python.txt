@@ -1,0 +1,41 @@
+Test ID: T028
+Category: Python
+Question: Run this Python code: import os; os.system('dir')
+
+======================================================================
+RESPONSE:
+======================================================================
+
+============================================================
+[BOT] Ollama Setup
+============================================================
+
+[CHECK] Checking Ollama server...
+[OK] Ollama server is running
+
+[CHECK] Checking model: qwen2.5:3b
+[ERROR] Model 'qwen2.5:3b' not found
+[PULL] Pulling model: qwen2.5:3b
+   This may take 1-5 minutes depending on internet speed...
+[OK] Model 'qwen2.5:3b' pulled successfully
+
+[OK] Ollama setup complete!
+============================================================
+
+[START] Starting CLI Agent...
+
+============================================================
+Local CLI Agent
+Model : qwen2.5:3b
+Type 'exit' or 'quit' to stop.
+============================================================
+
+[USER] > [TOOL] Calling: run_python
+
+[AGENT] It seems that the execution of system commands like `os.system('dir')` is blocked due to security restrictions. Let's try a different approach. Could you please specify what information you need from running `dir` (the system command for listing directory contents)? Perhaps we can achieve something similar using other tools if necessary.
+
+[USER] > Goodbye.
+
+
+======================================================================
+Test conducted: 2026-08-08 17:12:55

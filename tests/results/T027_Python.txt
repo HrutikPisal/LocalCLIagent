@@ -1,0 +1,41 @@
+Test ID: T027
+Category: Python
+Question: What's 2 to the power of 10? Use Python to check.
+
+======================================================================
+RESPONSE:
+======================================================================
+
+============================================================
+[BOT] Ollama Setup
+============================================================
+
+[CHECK] Checking Ollama server...
+[OK] Ollama server is running
+
+[CHECK] Checking model: qwen2.5:3b
+[ERROR] Model 'qwen2.5:3b' not found
+[PULL] Pulling model: qwen2.5:3b
+   This may take 1-5 minutes depending on internet speed...
+[OK] Model 'qwen2.5:3b' pulled successfully
+
+[OK] Ollama setup complete!
+============================================================
+
+[START] Starting CLI Agent...
+
+============================================================
+Local CLI Agent
+Model : qwen2.5:3b
+Type 'exit' or 'quit' to stop.
+============================================================
+
+[USER] > [TOOL] Calling: run_python
+
+[AGENT] 2 to the power of 10 is 1024.
+
+[USER] > Goodbye.
+
+
+======================================================================
+Test conducted: 2026-08-08 17:12:26

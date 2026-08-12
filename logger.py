@@ -6,10 +6,13 @@ from config import LOGS_DIR
 
 
 class AgentLogger:
-    """Writes structured agent activity to logs/agent.log."""
+    """Writes structured agent activity to date-based log files."""
 
-    def __init__(self, log_file: str = "agent.log"):
+    def __init__(self, log_file: str | None = None):
         LOGS_DIR.mkdir(parents=True, exist_ok=True)
+        if log_file is None:
+            date_str = datetime.now().strftime("%d_%m_%Y")
+            log_file = f"agent_{date_str}.txt"
         self.log_path = LOGS_DIR / log_file
 
     def _write(self, entry: dict) -> None:

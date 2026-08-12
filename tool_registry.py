@@ -10,6 +10,13 @@ from tools.search_files import search_files
 from tools.search_text import search_text
 from tools.system_info import system_info
 from tools.write_file import write_file
+from tools.tools import get_tool_info
+from tools.network_info import network_info, ping, dns_lookup, check_port
+from tools.edit_file import edit_file, insert_line, delete_line
+from tools.terminal_read import run_command as terminal_run_command, get_output, execute_command
+from tools.process_manager import list_processes, find_process_by_name, get_process_info, kill_process
+from tools.service_manager import list_services, get_service_status, start_service, stop_service, restart_service
+from tools.install_package import install_package, install_requirements, list_installed_packages
 
 
 def _schema(name: str, description: str, properties: dict, required: list | None = None) -> dict:
@@ -127,6 +134,121 @@ TOOL_MAP = {
         "function": git_push,
         "permission": "system_write",
         "category": "git",
+    },
+    "get_tool_info": {
+        "function": get_tool_info,
+        "permission": "read",
+        "category": "system",
+    },
+    "network_info": {
+        "function": network_info,
+        "permission": "read",
+        "category": "system",
+    },
+    "ping": {
+        "function": ping,
+        "permission": "read",
+        "category": "system",
+    },
+    "dns_lookup": {
+        "function": dns_lookup,
+        "permission": "read",
+        "category": "system",
+    },
+    "check_port": {
+        "function": check_port,
+        "permission": "read",
+        "category": "system",
+    },
+    "edit_file": {
+        "function": edit_file,
+        "permission": "workspace_write",
+        "category": "filesystem",
+    },
+    "insert_line": {
+        "function": insert_line,
+        "permission": "workspace_write",
+        "category": "filesystem",
+    },
+    "delete_line": {
+        "function": delete_line,
+        "permission": "workspace_write",
+        "category": "filesystem",
+    },
+    "run_command": {
+        "function": terminal_run_command,
+        "permission": "workspace_write",
+        "category": "terminal",
+    },
+    "get_output": {
+        "function": get_output,
+        "permission": "workspace_write",
+        "category": "terminal",
+    },
+    "execute_command": {
+        "function": execute_command,
+        "permission": "workspace_write",
+        "category": "terminal",
+    },
+    "list_processes": {
+        "function": list_processes,
+        "permission": "read",
+        "category": "system",
+    },
+    "find_process_by_name": {
+        "function": find_process_by_name,
+        "permission": "read",
+        "category": "system",
+    },
+    "get_process_info": {
+        "function": get_process_info,
+        "permission": "read",
+        "category": "system",
+    },
+    "kill_process": {
+        "function": kill_process,
+        "permission": "dangerous",
+        "category": "system",
+    },
+    "list_services": {
+        "function": list_services,
+        "permission": "read",
+        "category": "system",
+    },
+    "get_service_status": {
+        "function": get_service_status,
+        "permission": "read",
+        "category": "system",
+    },
+    "start_service": {
+        "function": start_service,
+        "permission": "system_write",
+        "category": "system",
+    },
+    "stop_service": {
+        "function": stop_service,
+        "permission": "system_write",
+        "category": "system",
+    },
+    "restart_service": {
+        "function": restart_service,
+        "permission": "system_write",
+        "category": "system",
+    },
+    "install_package": {
+        "function": install_package,
+        "permission": "system_write",
+        "category": "package",
+    },
+    "install_requirements": {
+        "function": install_requirements,
+        "permission": "system_write",
+        "category": "package",
+    },
+    "list_installed_packages": {
+        "function": list_installed_packages,
+        "permission": "read",
+        "category": "package",
     },
 }
 
@@ -280,5 +402,187 @@ TOOLS_SCHEMA = [
             "remote": {"type": "string", "description": "Remote name."},
             "branch": {"type": "string", "description": "Branch name."},
         },
+    ),
+    _schema(
+        "get_tool_info",
+        "Get information about all available tools.",
+        {},
+    ),
+    _schema(
+        "network_info",
+        "Get hostname, FQDN, and IP address information.",
+        {},
+    ),
+    _schema(
+        "ping",
+        "Ping a host to test connectivity.",
+        {
+            "host": {"type": "string", "description": "Hostname or IP address"},
+            "count": {"type": "integer", "description": "Number of ping requests"},
+        },
+        required=["host"],
+    ),
+    _schema(
+        "dns_lookup",
+        "Resolve a hostname to IP address(es).",
+        {
+            "hostname": {"type": "string", "description": "Hostname to resolve"},
+        },
+        required=["hostname"],
+    ),
+    _schema(
+        "check_port",
+        "Check if a port is open on a host.",
+        {
+            "host": {"type": "string", "description": "Hostname or IP"},
+            "port": {"type": "integer", "description": "Port number"},
+            "timeout": {"type": "integer", "description": "Timeout in seconds"},
+        },
+        required=["host", "port"],
+    ),
+    _schema(
+        "edit_file",
+        "Find and replace text in a file.",
+        {
+            "path": {"type": "string", "description": "File path"},
+            "find": {"type": "string", "description": "Text to find"},
+            "replace": {"type": "string", "description": "Text to replace with"},
+        },
+        required=["path", "find", "replace"],
+    ),
+    _schema(
+        "insert_line",
+        "Insert a line at a specific line number.",
+        {
+            "path": {"type": "string", "description": "File path"},
+            "line_number": {"type": "integer", "description": "Line number"},
+            "content": {"type": "string", "description": "Content to insert"},
+        },
+        required=["path", "line_number", "content"],
+    ),
+    _schema(
+        "delete_line",
+        "Delete a line at a specific line number.",
+        {
+            "path": {"type": "string", "description": "File path"},
+            "line_number": {"type": "integer", "description": "Line number"},
+        },
+        required=["path", "line_number"],
+    ),
+    _schema(
+        "run_command",
+        "Run a shell command and capture output.",
+        {
+            "command": {"type": "string", "description": "Command to run"},
+            "cwd": {"type": "string", "description": "Working directory"},
+            "shell": {"type": "boolean", "description": "Use shell mode"},
+        },
+        required=["command"],
+    ),
+    _schema(
+        "get_output",
+        "Execute a command and return only stdout.",
+        {
+            "command": {"type": "string", "description": "Command to execute"},
+        },
+        required=["command"],
+    ),
+    _schema(
+        "execute_command",
+        "Execute a shell command with full output capture.",
+        {
+            "command": {"type": "string", "description": "Command to execute"},
+            "cwd": {"type": "string", "description": "Working directory"},
+        },
+        required=["command"],
+    ),
+    _schema(
+        "list_processes",
+        "List all running processes.",
+        {},
+    ),
+    _schema(
+        "find_process_by_name",
+        "Find processes matching a name pattern.",
+        {
+            "name": {"type": "string", "description": "Process name to search"},
+        },
+        required=["name"],
+    ),
+    _schema(
+        "get_process_info",
+        "Get detailed information about a process.",
+        {
+            "pid": {"type": "integer", "description": "Process ID"},
+        },
+        required=["pid"],
+    ),
+    _schema(
+        "kill_process",
+        "Terminate a process. Requires approval.",
+        {
+            "pid": {"type": "integer", "description": "Process ID to terminate"},
+        },
+        required=["pid"],
+    ),
+    _schema(
+        "list_services",
+        "List all Windows services.",
+        {},
+    ),
+    _schema(
+        "get_service_status",
+        "Get status of a Windows service.",
+        {
+            "service_name": {"type": "string", "description": "Service name"},
+        },
+        required=["service_name"],
+    ),
+    _schema(
+        "start_service",
+        "Start a Windows service.",
+        {
+            "service_name": {"type": "string", "description": "Service name"},
+        },
+        required=["service_name"],
+    ),
+    _schema(
+        "stop_service",
+        "Stop a Windows service.",
+        {
+            "service_name": {"type": "string", "description": "Service name"},
+        },
+        required=["service_name"],
+    ),
+    _schema(
+        "restart_service",
+        "Restart a Windows service.",
+        {
+            "service_name": {"type": "string", "description": "Service name"},
+        },
+        required=["service_name"],
+    ),
+    _schema(
+        "install_package",
+        "Install a package using pip.",
+        {
+            "package": {"type": "string", "description": "Package name"},
+            "directory": {"type": "string", "description": "Project directory"},
+        },
+        required=["package"],
+    ),
+    _schema(
+        "install_requirements",
+        "Install packages from a requirements.txt file.",
+        {
+            "requirements_file": {"type": "string", "description": "Path to requirements.txt"},
+            "directory": {"type": "string", "description": "Project directory"},
+        },
+        required=["requirements_file"],
+    ),
+    _schema(
+        "list_installed_packages",
+        "List all installed Python packages.",
+        {},
     ),
 ]

@@ -11,6 +11,8 @@ from tool_registry import TOOLS_SCHEMA
 class OllamaClient:
     """Handles Ollama chat requests and tool-call loops."""
 
+    MAX_TOOL_CALLS_PER_TURN = 5
+
     def __init__(self, conversation):
         self.model = get_default_model()
         self.conversation = conversation
@@ -25,7 +27,7 @@ class OllamaClient:
 
         while True:
             try:
-                user_input = input("\n🙂 > ").strip()
+                user_input = input("\n[USER] > ").strip()
             except (EOFError, KeyboardInterrupt):
                 print("\nGoodbye.")
                 break
@@ -42,9 +44,9 @@ class OllamaClient:
 
             try:
                 reply = self._complete_turn()
-                print(f"\n🤖 {reply}")
+                print(f"\n[AGENT] {reply}")
             except Exception as exc:
-                print(f"\n❌ Error: {exc}")
+                print(f"\n[ERROR] Error: {exc}")
 
     def _complete_turn(self) -> str:
         response = ollama.chat(
@@ -55,6 +57,11 @@ class OllamaClient:
 
         tools_used = []
         while response.get("message", {}).get("tool_calls"):
+            if len(tools_used) >= self.MAX_TOOL_CALLS_PER_TURN:
+                stop_message = "(Stopped: reached the maximum number of chained tool calls for this turn.)"
+                self.conversation.add_assistant(stop_message)
+                self.logger.log_response(self.model, stop_message, tools_used)
+                return stop_message
             assistant_message = response["message"]
             self.conversation.add_assistant_tool_calls(assistant_message)
 

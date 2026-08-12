@@ -86,6 +86,43 @@ Goodbye.
 ### System
 - `system_info` — OS, CPU, RAM, Python details
 
+### Network & Diagnostics
+- `network_info` — Get hostname and IP information
+- `ping` — Test connectivity to a host
+- `dns_lookup` — Resolve hostname to IP addresses
+- `check_port` — Check if a port is open
+
+### File Editing
+- `edit_file` — Find and replace text in files
+- `insert_line` — Insert a line at specific position
+- `delete_line` — Delete a line at specific position
+
+### Terminal & Execution
+- `run_command` — Execute shell commands
+- `get_output` — Execute and capture output
+- `execute_command` — Execute with full output capture
+
+### Process Management
+- `list_processes` — List all running processes
+- `find_process_by_name` — Search for processes
+- `get_process_info` — Get process details
+- `kill_process` — Terminate a process (requires approval)
+
+### Windows Services
+- `list_services` — List Windows services
+- `get_service_status` — Get service status
+- `start_service` — Start a service (requires approval)
+- `stop_service` — Stop a service (requires approval)
+- `restart_service` — Restart a service (requires approval)
+
+### Package Utilities
+- `install_package` — Install packages (requires approval)
+- `install_requirements` — Install from requirements.txt (requires approval)
+- `list_installed_packages` — List installed packages
+
+### Tools Discovery
+- `get_tool_info` — Get information about all available tools
+
 ## 🔐 Permission Levels
 
 | Level | Tools | Approval |
@@ -130,7 +167,7 @@ local_cli_agent/
 │   ├── python_runner.py
 │   ├── pip_tools.py
 │   ├── system_info.py
-│   └── ... (20+ tools)
+│   └── ... (43 tools)
 │
 ├── config/                  # Configuration files
 │   ├── models.json          # Model defaults & allowed list
@@ -175,13 +212,21 @@ Edit `config/policy.json`:
 }
 ```
 
-## 🚀 Features in Progress
+## 🚀 Features & Roadmap
 
-- [ ] Voice input (speech-to-text)
-- [ ] Process & service management tools
-- [ ] Network diagnostics (ping, DNS, ports)
+**Completed:**
+- ✅ Process & service management tools
+- ✅ Network diagnostics (ping, DNS, ports)
+- ✅ File editing (find/replace, insert, delete)
+- ✅ Terminal execution & command output capture
+
+**In Progress:**
 - [ ] Performance profiling
 - [ ] Plugin system for custom tools
+
+**Future (Phase 3):**
+- [ ] Voice input (speech-to-text)
+- [ ] Voice output (text-to-speech)
 
 ## 🐛 Known Limitations
 

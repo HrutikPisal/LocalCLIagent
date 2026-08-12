@@ -1,0 +1,41 @@
+Test ID: T042
+Category: Error-Handling
+Question: Read huge_dump.sql.
+
+======================================================================
+RESPONSE:
+======================================================================
+
+============================================================
+[BOT] Ollama Setup
+============================================================
+
+[CHECK] Checking Ollama server...
+[OK] Ollama server is running
+
+[CHECK] Checking model: qwen2.5:3b
+[ERROR] Model 'qwen2.5:3b' not found
+[PULL] Pulling model: qwen2.5:3b
+   This may take 1-5 minutes depending on internet speed...
+[OK] Model 'qwen2.5:3b' pulled successfully
+
+[OK] Ollama setup complete!
+============================================================
+
+[START] Starting CLI Agent...
+
+============================================================
+Local CLI Agent
+Model : qwen2.5:3b
+Type 'exit' or 'quit' to stop.
+============================================================
+
+[USER] > [TOOL] Calling: read_file
+
+[AGENT] The file 'huge_dump.sql' does not exist in the current directory. Please ensure you have provided the correct path or that the file is present there before trying again.
+
+[USER] > Goodbye.
+
+
+======================================================================
+Test conducted: 2026-08-08 17:24:16

@@ -1,0 +1,42 @@
+Test ID: T018
+Category: System-Information
+Question: Which version of Windows am I running?
+
+======================================================================
+RESPONSE:
+======================================================================
+
+============================================================
+[BOT] Ollama Setup
+============================================================
+
+[CHECK] Checking Ollama server...
+[OK] Ollama server is running
+
+[CHECK] Checking model: qwen2.5:3b
+[ERROR] Model 'qwen2.5:3b' not found
+[PULL] Pulling model: qwen2.5:3b
+   This may take 1-5 minutes depending on internet speed...
+[OK] Model 'qwen2.5:3b' pulled successfully
+
+[OK] Ollama setup complete!
+============================================================
+
+[START] Starting CLI Agent...
+
+============================================================
+Local CLI Agent
+Model : qwen2.5:3b
+Type 'exit' or 'quit' to stop.
+============================================================
+
+[USER] > [TOOL] Calling: get_service_status
+[TOOL] Calling: system_info
+
+[AGENT] You are running Windows 11 with the operating system version 10.0.26200 on your machine. The `system_info` tool provided information about your OS, CPU, RAM, and Python environment. If you need further details or assistance with any of these components, feel free to ask!
+
+[USER] > Goodbye.
+
+
+======================================================================
+Test conducted: 2026-08-08 17:06:50

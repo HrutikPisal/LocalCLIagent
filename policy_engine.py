@@ -79,7 +79,8 @@ class PolicyEngine:
                 return f"Write/delete blocked on protected path: {path}"
 
             if permission == "workspace_write" and not is_inside_workspace(path):
-                return f"Write operations restricted to workspace: {get_workspace()}"
+                workspace = get_workspace()
+                return f"Write operations restricted to workspace directory: {workspace}\nRequested path: {path}"
 
             if permission == "dangerous" and is_protected_path(path):
                 return f"Dangerous operation blocked on protected path: {path}"

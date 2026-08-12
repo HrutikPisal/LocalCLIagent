@@ -1,0 +1,47 @@
+Test ID: T022
+Category: Git
+Question: Show me the last 3 commit messages.
+
+======================================================================
+RESPONSE:
+======================================================================
+
+============================================================
+[BOT] Ollama Setup
+============================================================
+
+[CHECK] Checking Ollama server...
+[OK] Ollama server is running
+
+[CHECK] Checking model: qwen2.5:3b
+[ERROR] Model 'qwen2.5:3b' not found
+[PULL] Pulling model: qwen2.5:3b
+   This may take 1-5 minutes depending on internet speed...
+[OK] Model 'qwen2.5:3b' pulled successfully
+
+[OK] Ollama setup complete!
+============================================================
+
+[START] Starting CLI Agent...
+
+============================================================
+Local CLI Agent
+Model : qwen2.5:3b
+Type 'exit' or 'quit' to stop.
+============================================================
+
+[USER] > [TOOL] Calling: git_log
+
+[AGENT] The last three commit messages in the repository are:
+
+1. `dfdecaa (HEAD -> master, origin/master) Initial commit: Local CLI Agent prototype`
+2. `e8f3bcb Create initial file structure and basic command setup.`
+3. `675c0d9 Add support for reading files`
+
+Please note that I only have the information up to `dfdecaa`. There might be additional commits before this one. If you need more details, please let me know how far back you want to go or if there are any specific commits you're interested in.
+
+[USER] > Goodbye.
+
+
+======================================================================
+Test conducted: 2026-08-08 17:10:00

@@ -35,6 +35,9 @@ class ToolExecutor:
                 self.logger.log_policy_denial(tool_name, arguments, "User denied approval.")
                 return tool_result(False, error="User denied tool execution.")
 
+        if decision == PolicyDecision.ALLOW:
+            print(f"[TOOL] Calling: {tool_name}")
+
         start = time.perf_counter()
         try:
             output = entry["function"](**arguments)
