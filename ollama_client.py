@@ -1,5 +1,7 @@
 import json
 import threading
+import sys
+import platform
 
 import ollama
 
@@ -7,6 +9,14 @@ from config import get_default_model, get_system_prompt
 from logger import AgentLogger
 from tool_executor import ToolExecutor
 from tool_registry import TOOLS_SCHEMA
+
+if platform.system() == "Windows":
+    try:
+        import msvcrt
+    except ImportError:
+        msvcrt = None
+else:
+    msvcrt = None
 
 
 class OllamaClient:
@@ -117,18 +127,48 @@ class OllamaClient:
 
     def _start_cancel_listener(self) -> None:
         def listen_for_cancel():
-            while not self.cancel_event.is_set():
-                try:
-                    user_input = input().strip()
-                    if user_input == self.CANCEL_KEYWORD:
-                        self.cancel_requested = True
-                        print("\n[AGENT] Cancelling turn...")
-                        break
-                except (EOFError, KeyboardInterrupt):
-                    break
+            if platform.system() == "Windows" and msvcrt:
+                self._listen_windows()
+            else:
+                self._listen_posix()
 
         listener_thread = threading.Thread(target=listen_for_cancel, daemon=True)
         listener_thread.start()
+
+    def _listen_windows(self) -> None:
+        input_buffer = ""
+        while not self.cancel_event.is_set():
+            try:
+                if msvcrt.kbhit():
+                    char = msvcrt.getch()
+                    if char == b'\x18':
+                        self.cancel_requested = True
+                        print("\n[AGENT] Cancelling turn (Ctrl+X)...")
+                        break
+                    elif char == b'\r':
+                        if input_buffer.strip() == self.CANCEL_KEYWORD:
+                            self.cancel_requested = True
+                            print("\n[AGENT] Cancelling turn (.stop)...")
+                            break
+                        input_buffer = ""
+                    elif char == b'\x08':
+                        input_buffer = input_buffer[:-1]
+                    elif 32 <= char[0] < 127:
+                        input_buffer += chr(char[0])
+                threading.Event().wait(0.01)
+            except (EOFError, KeyboardInterrupt, Exception):
+                break
+
+    def _listen_posix(self) -> None:
+        while not self.cancel_event.is_set():
+            try:
+                user_input = input().strip()
+                if user_input == self.CANCEL_KEYWORD:
+                    self.cancel_requested = True
+                    print("\n[AGENT] Cancelling turn (.stop)...")
+                    break
+            except (EOFError, KeyboardInterrupt):
+                break
 
     def _print_banner(self) -> None:
         print("=" * 60)
@@ -138,7 +178,9 @@ class OllamaClient:
         print("=" * 60)
 
     def _print_help(self) -> None:
-        print("\n[HELP] Commands:")
-        print(f"  - Type '{self.CANCEL_KEYWORD}' anytime to cancel the current turn")
+        print("\n[HELP] Controls:")
+        cancel_help = "Press Ctrl+X OR type '.stop'" if (platform.system() == "Windows" and msvcrt) else f"Type '{self.CANCEL_KEYWORD}'"
+        print(f"  - {cancel_help} to cancel the current turn")
         print("  - Type 'exit' or 'quit' to close the agent")
+        print("  - Press Ctrl+C to exit the agent immediately")
         print("="  * 60)

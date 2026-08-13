@@ -14,9 +14,11 @@ Starts the CLI agent. Ollama must be running or the agent will attempt to start 
 
 **Agent Controls:**
 - Type a question and press Enter to ask the agent
-- Type `.stop` anytime to **cancel the current turn** (stops tool calls, model thinking) without exiting
-- Type `exit` or `quit` to close the agent
-- Press Ctrl+C to exit the agent completely
+- **Press Ctrl+X** OR **type `.stop`** to cancel the current turn (stops tool calls, model thinking) without exiting
+  - On Windows: Ctrl+X works natively; `.stop` is backup
+  - On Mac/Linux: Type `.stop` (keyboard shortcut not available in terminal)
+- Type `exit` or `quit` to close the agent gracefully
+- Press Ctrl+C to exit the agent completely and immediately
 
 ### Run Tests
 ```bash
