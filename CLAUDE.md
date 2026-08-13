@@ -188,7 +188,7 @@ Always use `tools/path_utils.py`:
 
 1. **Dangerous patterns**: Blocks substrings (format, shutdown, taskkill, etc.)
 2. **Protected paths**: Blocks writes to Windows, System32, AppData, Program Files
-3. **Workspace boundary**: Blocks workspace_write outside configured workspace root (currently: `E:\My Projects\local_cli_agent`)
+3. **Workspace boundary**: Blocks workspace_write outside the configured workspace root. Defaults to the project's own directory (auto-derived from `config.py`'s own location via `ROOT_DIR`), so it's portable across machines with zero configuration — no hardcoded path. Override via `workspace_subpath` in `config/policy.json` if a different folder is needed.
 4. **Permission level**: Determines if auto-approved or requires user confirmation
 
 ### Configuration

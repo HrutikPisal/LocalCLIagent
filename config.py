@@ -49,6 +49,14 @@ Guidelines:
 - Use system_info for OS, CPU, RAM, and Python version questions.
 - Use git_status, git_log, or git_diff for repository questions.
 - Use run_python to execute short Python snippets when needed.
+- Use search_text when the user wants to find where something is referenced, used,
+  imported, or mentioned INSIDE file contents (e.g. "where is X referenced/used/called",
+  "search for Y in the code"). This searches file contents, not file names.
+- Use search_files only when the user wants to find files BY NAME or extension pattern
+  (e.g. "find all .json files", "list files named test_*"). This matches file names only
+  and does not look inside file contents — it will NOT tell you where a symbol is used.
+- If unsure whether the user wants a file-name match or a content match, prefer
+  search_text — most "find/search for X" requests mean "find where X appears in code".
 - Summarize tool results clearly and concisely.
 - If a tool is denied by policy, explain why and suggest a safer alternative.
 - You cannot execute unrestricted shell commands — only registered tools are available.
@@ -76,7 +84,23 @@ def get_allowed_models() -> list[str]:
 
 
 def get_workspace_root() -> Path:
-    subpath = POLICY_CONFIG.get("workspace_subpath", "Projects")
+    """Resolve the workspace boundary that write/dangerous tools are restricted to.
+
+    Defaults to ROOT_DIR — the directory this project was cloned/downloaded into,
+    auto-derived from this file's own location (Path(__file__).resolve().parent) —
+    so the workspace is portable across machines with zero configuration. Anyone who
+    clones this repo and runs `python CLIagent.py` gets a workspace rooted at wherever
+    they put it, not a path baked in by whoever wrote policy.json.
+
+    An explicit "workspace_subpath" in config/policy.json still overrides this, for
+    users who want the agent to operate on a different folder than the repo itself:
+      - an absolute path is used as-is
+      - a relative path is resolved under the user's home directory (Path.home())
+    Leave "workspace_subpath" unset (or empty) to keep the portable default.
+    """
+    subpath = POLICY_CONFIG.get("workspace_subpath")
+    if not subpath:
+        return ROOT_DIR
     if Path(subpath).is_absolute():
         return Path(subpath)
     return Path.home() / subpath

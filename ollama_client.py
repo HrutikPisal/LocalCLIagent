@@ -1,6 +1,7 @@
 import json
 import platform
 import threading
+import time
 
 import ollama
 
@@ -47,6 +48,25 @@ class OllamaClient:
     MAX_TOOL_CALLS_PER_TURN = 5
     CANCEL_KEYWORD = ".stop"
 
+    # Hard ceiling on total turn wall-clock time, as a last-resort safety net against
+    # genuine hangs (e.g. a wrong-tool retry loop, or Ollama becoming unresponsive).
+    # Deliberately generous, not tuned for snappy UX: on this project's reference
+    # hardware (CPU-only inference, qwen2.5:3b), a single non-tool-call response after
+    # a large tool result has been observed taking up to ~9 minutes end-to-end. A short
+    # timeout (e.g. 90-120s) would abort that legitimate case constantly. 600s (10 min)
+    # is chosen as a ceiling that still lets normal slow-but-working turns finish, while
+    # capping runaway multi-tool-call loops that would otherwise run unbounded.
+    MAX_TURN_SECONDS = 600
+
+    # Soft cap on generated tokens per model turn. This does not by itself prevent
+    # context-window overflow (that's addressed by trimming large tool outputs before
+    # they enter conversation history — see tools/read_directory.py, tools/search_files.py),
+    # but it bounds worst-case generation time and avoids unbounded runaway output on this
+    # RAM-constrained machine. num_ctx is intentionally left at the model's default rather
+    # than being raised, since more context directly means more memory pressure on a
+    # machine that has already been observed running under 1GB free RAM.
+    NUM_PREDICT = 800
+
     def __init__(self, conversation):
         self.model = get_default_model()
         self.conversation = conversation
@@ -85,6 +105,9 @@ class OllamaClient:
             self.conversation.add_user(user_input)
             self.logger.log_prompt(user_input)
 
+            print("[AGENT] Thinking... (this model can take a while on this machine; "
+                  f"type '{self.CANCEL_KEYWORD}' anytime to cancel)", flush=True)
+
             self._start_cancel_listener()
             try:
                 reply = self._complete_turn()
@@ -102,21 +125,39 @@ class OllamaClient:
 
     def _complete_turn(self) -> str:
         tools_used = []
+        turn_deadline = time.monotonic() + self.MAX_TURN_SECONDS
 
         while True:
             if self.cancel_requested:
                 return "(Turn cancelled.)"
 
-            message = self._stream_chat()
+            if time.monotonic() >= turn_deadline:
+                timeout_message = (
+                    f"(Stopped: this turn exceeded {self.MAX_TURN_SECONDS}s without "
+                    "finishing. The model may be stuck retrying, or the machine may be "
+                    "overloaded — try a simpler question, or check that Ollama is still "
+                    "responsive.)"
+                )
+                self.conversation.add_assistant(timeout_message)
+                self.logger.log_response(self.model, timeout_message, tools_used)
+                return timeout_message
+
+            message = self._stream_chat(turn_deadline)
 
             if self.cancel_requested:
                 return "(Turn cancelled.)"
 
             if not message.get("tool_calls"):
                 final_content = (message.get("content") or "").strip()
+                if not final_content:
+                    final_content = (
+                        "(I wasn't able to generate a response for that. "
+                        "This can happen when the model runs out of context on a large "
+                        "tool result — try asking a more specific question, or ask again.)"
+                    )
                 self.conversation.add_assistant(final_content)
                 self.logger.log_response(self.model, final_content, tools_used)
-                return final_content or "(No response)"
+                return final_content
 
             if len(tools_used) >= self.MAX_TOOL_CALLS_PER_TURN:
                 stop_message = "(Stopped: reached the maximum number of chained tool calls for this turn.)"
@@ -142,22 +183,24 @@ class OllamaClient:
             if self.cancel_requested:
                 return "(Turn cancelled during tool execution.)"
 
-    def _stream_chat(self) -> dict:
-        """Stream a chat response, checking cancel_requested after every chunk
-        so a turn can be interrupted mid-generation instead of only after the
-        full response completes."""
+    def _stream_chat(self, turn_deadline: float) -> dict:
+        """Stream a chat response, checking cancel_requested and the turn
+        deadline after every chunk so a turn can be interrupted mid-generation
+        (including during a single, long, tool-free response) instead of only
+        between tool-call rounds or after the full response completes."""
         stream = ollama.chat(
             model=self.model,
             messages=self.conversation.history(),
             tools=TOOLS_SCHEMA,
             stream=True,
+            options={"num_predict": self.NUM_PREDICT},
         )
 
         content_parts = []
         tool_calls = None
         try:
             for chunk in stream:
-                if self.cancel_requested:
+                if self.cancel_requested or time.monotonic() >= turn_deadline:
                     break
                 msg = chunk.get("message", {})
                 if msg.get("content"):

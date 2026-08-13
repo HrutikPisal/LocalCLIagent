@@ -16,9 +16,13 @@ A secure, modular local-first AI CLI assistant powered by **Ollama** and the **Q
 ## ⚡ Quick Start
 
 ### Prerequisites
-- **Python 3.8+** installed
-- **Ollama** (download from [ollama.com](https://ollama.com))
+- **Python 3.10+** installed (the code uses `str | None` union-type syntax, which
+  requires 3.10 or newer — it will fail to import on 3.8/3.9)
+- **Ollama** installed separately from [ollama.com](https://ollama.com) — `pip install`
+  only installs the Python *client*, not the Ollama application/server itself
 - **Git** (optional, for version control)
+- A few GB of free disk space (for the pulled model) and ideally a few GB of free RAM —
+  see the "Performance Notes" section further down for what to expect on modest hardware
 
 ### Installation
 
@@ -28,33 +32,52 @@ git clone https://github.com/YOUR_USERNAME/LocalCLIagent.git
 cd LocalCLIagent
 
 # Install Python dependencies
-pip install ollama psutil
+pip install -r requirements.txt
 
 # Start the agent (automatic setup)
 python CLIagent.py
 ```
 
-The agent will automatically:
-- ✅ Detect if Ollama server is running
-- ✅ Start Ollama if needed (if installed)
-- ✅ Pull the default model if missing
-- ✅ Launch interactive chat
+On first run, the agent will automatically:
+- ✅ Detect if the Ollama server is running, and start it if it's installed but not running
+- ✅ Pull the default model (`qwen2.5:3b`, ~2GB) if it isn't already downloaded — needs
+  an internet connection and can take a few minutes
+- ✅ Warn if available RAM looks too low for comfortable local inference
+- ✅ Launch interactive chat, with the workspace boundary automatically set to wherever
+  you cloned this repo — no configuration needed to start reading/writing files here
 
 ## 💬 Example Usage
 
 ```
-🙂 > What Python version is installed?
-🤖 The installed Python version is 3.11.3, located at C:\Program Files\Python311\python.exe.
+[USER] > What Python version is installed?
+[AGENT] Thinking...
+[TOOL] Calling: system_info
 
-🙂 > Show me the files in the current directory.
-🤖 The current directory contains: README.md, src/ (folder), and requirements.txt.
+[AGENT] The installed Python version is 3.11.3, located at C:\Program Files\Python311\python.exe.
 
-🙂 > What's the status of my git repo?
-🤖 On branch main: src/app.py is modified, and notes.txt is untracked.
+[USER] > Show me the files in the current directory.
+[AGENT] Thinking...
+[TOOL] Calling: read_directory
 
-🙂 > exit
+[AGENT] The current directory contains: README.md, src/ (folder), and requirements.txt.
+
+[USER] > exit
 Goodbye.
 ```
+
+### Controls
+
+- Type **`.stop`** anytime to cancel the current turn without exiting the agent —
+  useful since local inference on modest hardware can take anywhere from a few seconds
+  to several minutes per response
+- On Windows, in a native console (cmd.exe / PowerShell / Windows Terminal launched
+  directly — **not** VSCode's integrated terminal or Git Bash), **Ctrl+X** also cancels
+  the current turn
+- Type `exit` or `quit` to close the agent gracefully
+- Press **Ctrl+C** to exit immediately
+- Write/dangerous operations (create, edit, delete, git commit/push, run scripts,
+  install packages, etc.) always prompt for `[y/N]` approval first — nothing destructive
+  happens silently
 
 ## 🛠️ Registered Tools
 
@@ -132,18 +155,21 @@ Goodbye.
 | **System Write** | Install packages, commit, push, run scripts | User approval |
 | **Dangerous** | Delete files | User approval + typed confirmation |
 
-**Workspace**: Restricted to `~/Projects` by default (configurable in `config/policy.json`)
+**Workspace**: Restricted to the project's own directory by default — auto-detected from
+wherever you cloned/downloaded it, no configuration needed (overridable in
+`config/policy.json`, see "Customize Workspace & Security" below)
 
 **Protected Paths**: Windows, System32, AppData, etc. are write-blocked
 
 ## 📚 Documentation
 
-- **[QUICKSTART.md](QUICKSTART.md)** — 30-second setup guide
-- **[RUN_CHECKLIST.md](RUN_CHECKLIST.md)** — Step-by-step manual setup
-- **[OLLAMA_AUTO_SETUP.md](OLLAMA_AUTO_SETUP.md)** — Automatic Ollama management
-- **[HALLUCINATION_FIXES.md](HALLUCINATION_FIXES.md)** — How model accuracy was improved
-- **[FEATURE_SUMMARY.md](FEATURE_SUMMARY.md)** — Complete feature overview
-- **[plan.md](plan.md)** — Long-term vision and architecture
+- **[documents/QUICKSTART.md](documents/QUICKSTART.md)** — 30-second setup guide
+- **[documents/RUN_CHECKLIST.md](documents/RUN_CHECKLIST.md)** — Step-by-step manual setup
+- **[documents/OLLAMA_AUTO_SETUP.md](documents/OLLAMA_AUTO_SETUP.md)** — Automatic Ollama management
+- **[documents/HALLUCINATION_FIXES.md](documents/HALLUCINATION_FIXES.md)** — How model accuracy was improved
+- **[documents/FEATURE_SUMMARY.md](documents/FEATURE_SUMMARY.md)** — Complete feature overview
+- **[documents/plan.md](documents/plan.md)** — Long-term vision and architecture
+- **[CLAUDE.md](CLAUDE.md)** — Architecture guide for AI coding assistants working in this repo
 
 ## 📋 Project Structure
 
@@ -200,17 +226,27 @@ Edit `config/models.json`:
 
 ### Customize Workspace & Security
 
-Edit `config/policy.json`:
+By default the workspace boundary — the folder that write/dangerous tools are
+restricted to — is the project's own directory, auto-detected from wherever you
+cloned or downloaded it. No configuration needed: clone the repo, install
+requirements, run `python CLIagent.py`, and the agent can read/write anywhere
+inside that folder and nowhere else.
+
+To point the agent at a *different* folder instead, edit `config/policy.json`:
 
 ```json
 {
-  "workspace_subpath": "Projects",           // Write boundary
+  "workspace_subpath": "Projects",           // Optional override — leave "" for the default
   "protected_path_names": [...],             // Never write to these
   "dangerous_patterns": [...],               // Block on substring match
   "max_file_read_bytes": 1048576,           // 1 MB limit
   "command_timeout_seconds": 30             // Kill commands after 30s
 }
 ```
+
+- Leave `workspace_subpath` empty (`""`) to keep the portable default (the project folder).
+- A relative value (e.g. `"Projects"`) resolves under your home directory (`~/Projects`).
+- An absolute value (e.g. `"C:\\Users\\you\\SomeFolder"`) is used exactly as given.
 
 ## 🚀 Features & Roadmap
 
@@ -228,25 +264,47 @@ Edit `config/policy.json`:
 - [ ] Voice input (speech-to-text)
 - [ ] Voice output (text-to-speech)
 
+## ⚡ Performance Notes
+
+This runs entirely on your local hardware — there is no cloud fallback, so response
+speed depends heavily on your machine:
+
+- **CPU-only inference** (no GPU available to Ollama) can take anywhere from a few
+  seconds to several minutes per response for the default `qwen2.5:3b` model, especially
+  after a large tool result (e.g. a big directory listing) is fed back into context
+- **Low free RAM** (observed below ~1.5GB free) can slow inference further or cause the
+  Ollama server to become unresponsive/crash — the agent prints a warning on startup if
+  this looks likely
+- If responses feel too slow, switch to a smaller model in `config/models.json`
+  (`qwen2.5:1.5b` or `qwen2.5:0.5b` are both already listed as allowed) — trades accuracy
+  for speed
+- Each turn has a generous 10-minute hard ceiling as a last-resort safety net against
+  genuine hangs; it will not fire on normal slow-but-working responses
+
 ## 🐛 Known Limitations
 
 - **Single-threaded CLI** — Cannot handle concurrent requests
 - **No undo** — Deletions are permanent
 - **Text-based only** — No GUI or web interface yet
-- **Windows-only** — Path handling is Windows-specific
-- **Qwen 2.5 model** — Best results with 3B version; 1.5B smaller but less accurate
+- **Windows-first** — Protected-path checks and the Ctrl+X cancel shortcut are
+  Windows-specific; the agent runs on Mac/Linux too (those code paths are guarded) but
+  is primarily developed and tested on Windows
+- **Qwen 2.5 model** — Best results with 3B version; 1.5B/0.5B are smaller and faster
+  but less accurate
 
 ## 📝 Testing
 
 ### Smoke Tests
 
-Validate the agent can answer standard questions:
+Validate the agent can answer standard questions (requires Ollama running):
 
 ```bash
-python smoke_tests.py
+python tests/smoke_tests.py
 ```
 
-Results written to `logs/smoke_test_<timestamp>.log`
+Results written to `logs/smoke_test_<timestamp>.log`. These tool-execution events are
+tagged `"source": "smoke_test"` in the daily activity log so they're distinguishable
+from real interactive sessions (which are tagged `"source": "interactive"`).
 
 ### Evaluation Dataset
 
@@ -262,7 +320,7 @@ cat tests/cli_agent_evaluation_dataset.json
 - **No raw shell access** — Only registered tools are available
 - **Input validation** — All paths, commands, and queries are checked
 - **Policy enforcement** — Dangerous operations require typed approval
-- **Logging** — All activity is logged to `logs/agent.log` for audit
+- **Logging** — All activity is logged to `logs/agent_<DD_MM_YYYY>.txt` (one file per day) for audit
 - **Offline operation** — Runs entirely locally; no cloud dependencies
 
 ## 📄 License
@@ -283,5 +341,5 @@ This is an initial prototype. Contributions, feedback, and feature requests are 
 
 **Status**: Initial Prototype (v0.1)  
 **Built with**: Python, Ollama, Qwen 2.5  
-**Platform**: Windows  
-**Last Updated**: August 2026
+**Platform**: Windows-first, Mac/Linux code paths present but less tested  
+**Last Updated**: August 13, 2026

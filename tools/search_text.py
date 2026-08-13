@@ -21,6 +21,7 @@ def search_text(
             return tool_result(False, error="Directory does not exist.")
 
         matches = []
+        truncated = False
         for file_path in root.rglob(file_pattern):
             if not file_path.is_file():
                 continue
@@ -31,6 +32,9 @@ def search_text(
 
             for line_no, line in enumerate(text.splitlines(), start=1):
                 if query.lower() in line.lower():
+                    if len(matches) >= max_matches:
+                        truncated = True
+                        break
                     matches.append(
                         {
                             "path": str(file_path),
@@ -38,10 +42,16 @@ def search_text(
                             "text": line.strip()[:300],
                         }
                     )
-                    if len(matches) >= max_matches:
-                        break
-            if len(matches) >= max_matches:
+            if truncated:
                 break
+
+        extra = {}
+        if truncated:
+            extra["truncated"] = True
+            extra["note"] = (
+                f"Showing first {max_matches} matches. Use a narrower query or "
+                "file_pattern for a complete list."
+            )
 
         return tool_result(
             True,
@@ -49,6 +59,7 @@ def search_text(
             query=query,
             count=len(matches),
             matches=matches,
+            **extra,
         )
 
     except Exception as exc:

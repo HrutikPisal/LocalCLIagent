@@ -20,7 +20,7 @@ from tool_registry import TOOLS_SCHEMA
 
 
 MODEL = get_default_model()
-EXECUTOR = ToolExecutor()
+EXECUTOR = ToolExecutor(log_source="smoke_test")
 
 
 TESTS = [

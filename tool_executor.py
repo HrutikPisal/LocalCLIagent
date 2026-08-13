@@ -10,9 +10,9 @@ from tools.path_utils import tool_result
 class ToolExecutor:
     """Executes registered tools after policy checks."""
 
-    def __init__(self):
+    def __init__(self, log_source: str = "interactive"):
         self.policy = PolicyEngine()
-        self.logger = AgentLogger()
+        self.logger = AgentLogger(source=log_source)
 
     def execute(self, tool_call: dict) -> str:
         tool_name = tool_call["function"]["name"]

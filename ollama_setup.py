@@ -18,6 +18,11 @@ try:
 except ImportError:
     requests = None
 
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
 import ollama
 
 from config import get_default_model
@@ -25,6 +30,27 @@ from config import get_default_model
 
 OLLAMA_API_URL = "http://localhost:11434/api/tags"
 OLLAMA_TIMEOUT = 2
+
+# Threshold below which we warn before starting. Chosen from observed session logs
+# where available RAM dropped to ~0.79-0.95GB free on a 7.75GB machine while running
+# qwen2.5:3b (CPU-only inference); that same session ended with the Ollama server
+# process crashing entirely mid-request. Not a hard block — the user may still proceed.
+LOW_RAM_WARNING_GB = 1.5
+
+
+def check_available_ram() -> None:
+    """Warn if available RAM is low enough to risk the slowdowns/crashes observed
+    in production logs. Best-effort: silently skips if psutil is unavailable."""
+    if psutil is None:
+        return
+    try:
+        available_gb = psutil.virtual_memory().available / (1024 ** 3)
+    except Exception:
+        return
+    if available_gb < LOW_RAM_WARNING_GB:
+        print(f"[WARN] Only {available_gb:.2f} GB RAM available. Local model inference "
+              "can become very slow or the Ollama server can crash under this little "
+              "headroom. Consider closing other applications before continuing.")
 
 
 def is_ollama_running() -> bool:
@@ -105,6 +131,8 @@ def setup_ollama() -> bool:
     print("=" * 60)
     print("[BOT] Ollama Setup")
     print("=" * 60)
+
+    check_available_ram()
 
     model_name = get_default_model()
 
