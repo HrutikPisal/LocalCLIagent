@@ -12,6 +12,12 @@ python CLIagent.py
 ```
 Starts the CLI agent. Ollama must be running or the agent will attempt to start it automatically.
 
+**Agent Controls:**
+- Type a question and press Enter to ask the agent
+- Type `.stop` anytime to **cancel the current turn** (stops tool calls, model thinking) without exiting
+- Type `exit` or `quit` to close the agent
+- Press Ctrl+C to exit the agent completely
+
 ### Run Tests
 ```bash
 # New tools smoke tests (no dependencies)
