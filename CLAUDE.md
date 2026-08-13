@@ -14,9 +14,14 @@ Starts the CLI agent. Ollama must be running or the agent will attempt to start 
 
 **Agent Controls:**
 - Type a question and press Enter to ask the agent
-- **Press Ctrl+X** OR **type `.stop`** to cancel the current turn (stops tool calls, model thinking) without exiting
-  - On Windows: Ctrl+X works natively; `.stop` is backup
-  - On Mac/Linux: Type `.stop` (keyboard shortcut not available in terminal)
+- **Windows, native console** (cmd.exe / PowerShell / Windows Terminal launched directly):
+  press **Ctrl+X** OR type `.stop` to cancel the current turn
+- **VSCode integrated terminal, Git Bash/MinTTY, or any other pty/ConPTY-relayed
+  terminal**: type `.stop` — Ctrl+X may silently fail to register here (see comment
+  block above the `msvcrt` import in [ollama_client.py](ollama_client.py) for why)
+- Either way, cancellation now takes effect mid-generation, not just after the full
+  response finishes — `_complete_turn()` streams the model response (`stream=True`) and
+  checks the cancel flag after every chunk instead of blocking on the whole reply
 - Type `exit` or `quit` to close the agent gracefully
 - Press Ctrl+C to exit the agent completely and immediately
 

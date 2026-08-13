@@ -1,7 +1,6 @@
 import json
-import threading
-import sys
 import platform
+import threading
 
 import ollama
 
@@ -10,6 +9,29 @@ from logger import AgentLogger
 from tool_executor import ToolExecutor
 from tool_registry import TOOLS_SCHEMA
 
+# Ctrl+X cancel support (Windows only) via msvcrt raw keystroke reads.
+#
+# WHERE THIS WORKS:
+#   - cmd.exe launched directly
+#   - PowerShell (powershell.exe / pwsh.exe) launched directly, not through another
+#     terminal emulator
+#   - Windows Terminal, when it is the actual host process attached to the console
+# These all provide a genuine Win32 console, which is what msvcrt.kbhit()/getch()
+# read from directly.
+#
+# WHERE THIS DOES NOT RELIABLY WORK:
+#   - VSCode's integrated terminal — it runs the shell behind ConPTY, a
+#     pseudo-console layer that emulates a terminal over a pipe. ConPTY does not
+#     guarantee raw control bytes (like Ctrl+X / 0x18) reach msvcrt the way a real
+#     console does, so the keypress can silently fail to register.
+#   - Git Bash / MinTTY / Cygwin — these never attach a real Win32 console at all,
+#     so msvcrt calls on them are unreliable by design, not just under load.
+#   - Any SSH or remote-desktop session relaying a terminal through a similar
+#     pty/ConPTY bridge.
+#
+# Because of this, '.stop' (typed + Enter, read via the normal input() below) is
+# kept as the mechanism guaranteed to work everywhere, and Ctrl+X is best-effort
+# on top of it — if Ctrl+X doesn't register in your terminal, '.stop' still will.
 if platform.system() == "Windows":
     try:
         import msvcrt
@@ -79,19 +101,22 @@ class OllamaClient:
                 self.cancel_event.set()
 
     def _complete_turn(self) -> str:
-        if self.cancel_requested:
-            return "(Turn cancelled before starting.)"
-
-        response = ollama.chat(
-            model=self.model,
-            messages=self.conversation.history(),
-            tools=TOOLS_SCHEMA,
-        )
-
         tools_used = []
-        while response.get("message", {}).get("tool_calls"):
+
+        while True:
             if self.cancel_requested:
-                return "(Turn cancelled during tool execution.)"
+                return "(Turn cancelled.)"
+
+            message = self._stream_chat()
+
+            if self.cancel_requested:
+                return "(Turn cancelled.)"
+
+            if not message.get("tool_calls"):
+                final_content = (message.get("content") or "").strip()
+                self.conversation.add_assistant(final_content)
+                self.logger.log_response(self.model, final_content, tools_used)
+                return final_content or "(No response)"
 
             if len(tools_used) >= self.MAX_TOOL_CALLS_PER_TURN:
                 stop_message = "(Stopped: reached the maximum number of chained tool calls for this turn.)"
@@ -99,10 +124,13 @@ class OllamaClient:
                 self.logger.log_response(self.model, stop_message, tools_used)
                 return stop_message
 
-            assistant_message = response["message"]
-            self.conversation.add_assistant_tool_calls(assistant_message)
+            self.conversation.add_assistant_tool_calls({
+                "role": "assistant",
+                "content": message.get("content", ""),
+                "tool_calls": message["tool_calls"],
+            })
 
-            for tool_call in assistant_message["tool_calls"]:
+            for tool_call in message["tool_calls"]:
                 if self.cancel_requested:
                     return "(Turn cancelled during tool execution.)"
 
@@ -114,58 +142,99 @@ class OllamaClient:
             if self.cancel_requested:
                 return "(Turn cancelled during tool execution.)"
 
-            response = ollama.chat(
-                model=self.model,
-                messages=self.conversation.history(),
-                tools=TOOLS_SCHEMA,
-            )
+    def _stream_chat(self) -> dict:
+        """Stream a chat response, checking cancel_requested after every chunk
+        so a turn can be interrupted mid-generation instead of only after the
+        full response completes."""
+        stream = ollama.chat(
+            model=self.model,
+            messages=self.conversation.history(),
+            tools=TOOLS_SCHEMA,
+            stream=True,
+        )
 
-        final_content = response["message"].get("content", "").strip()
-        self.conversation.add_assistant(final_content)
-        self.logger.log_response(self.model, final_content, tools_used)
-        return final_content or "(No response)"
+        content_parts = []
+        tool_calls = None
+        try:
+            for chunk in stream:
+                if self.cancel_requested:
+                    break
+                msg = chunk.get("message", {})
+                if msg.get("content"):
+                    content_parts.append(msg["content"])
+                if msg.get("tool_calls"):
+                    tool_calls = msg["tool_calls"]
+        finally:
+            close = getattr(stream, "close", None)
+            if callable(close):
+                close()
+
+        result = {"content": "".join(content_parts)}
+        if tool_calls:
+            result["tool_calls"] = tool_calls
+        return result
 
     def _start_cancel_listener(self) -> None:
-        def listen_for_cancel():
-            if platform.system() == "Windows" and msvcrt:
-                self._listen_windows()
-            else:
-                self._listen_posix()
+        """Start the background thread that watches for a cancel signal while
+        a turn is in progress. Uses the msvcrt-based listener (Ctrl+X + '.stop')
+        when a real Windows console is available, otherwise falls back to a
+        plain input()-based listener ('.stop' only) that works on every
+        platform and terminal. See the module-level comment above the msvcrt
+        import for exactly which terminals support Ctrl+X."""
+        if msvcrt:
+            target = self._listen_windows
+        else:
+            target = self._listen_fallback
 
-        listener_thread = threading.Thread(target=listen_for_cancel, daemon=True)
+        listener_thread = threading.Thread(target=target, daemon=True)
         listener_thread.start()
 
     def _listen_windows(self) -> None:
+        """Raw keystroke listener for native Win32 consoles. Detects Ctrl+X
+        (byte 0x18) instantly, and also buffers typed characters so '.stop'
+        + Enter still works as a fallback in the same listener. Does NOT
+        reliably see keystrokes under ConPTY-backed terminals (VSCode's
+        integrated terminal) or Git Bash/MinTTY — see the module-level
+        comment for details. If Ctrl+X silently does nothing in your
+        terminal, type '.stop' + Enter instead."""
         input_buffer = ""
         while not self.cancel_event.is_set():
             try:
                 if msvcrt.kbhit():
                     char = msvcrt.getch()
-                    if char == b'\x18':
+
+                    if char == b"\x18":  # Ctrl+X
                         self.cancel_requested = True
-                        print("\n[AGENT] Cancelling turn (Ctrl+X)...")
+                        print("\n[AGENT] Cancelling turn (Ctrl+X)...", flush=True)
                         break
-                    elif char == b'\r':
+
+                    elif char in (b"\r", b"\n"):
                         if input_buffer.strip() == self.CANCEL_KEYWORD:
                             self.cancel_requested = True
-                            print("\n[AGENT] Cancelling turn (.stop)...")
+                            print("\n[AGENT] Cancelling turn (.stop)...", flush=True)
                             break
                         input_buffer = ""
-                    elif char == b'\x08':
+
+                    elif char == b"\x08":  # backspace
                         input_buffer = input_buffer[:-1]
+
                     elif 32 <= char[0] < 127:
                         input_buffer += chr(char[0])
-                threading.Event().wait(0.01)
-            except (EOFError, KeyboardInterrupt, Exception):
+                else:
+                    self.cancel_event.wait(0.05)
+            except Exception:
                 break
 
-    def _listen_posix(self) -> None:
+    def _listen_fallback(self) -> None:
+        """Plain input()-based listener for non-Windows platforms and for
+        Windows environments without msvcrt. Only '.stop' + Enter is
+        supported here — no raw keystroke detection, so no Ctrl+X."""
         while not self.cancel_event.is_set():
             try:
                 user_input = input().strip()
                 if user_input == self.CANCEL_KEYWORD:
                     self.cancel_requested = True
-                    print("\n[AGENT] Cancelling turn (.stop)...")
+                    print("\n[AGENT] Cancelling turn (.stop)...", flush=True)
                     break
             except (EOFError, KeyboardInterrupt):
                 break
@@ -179,8 +248,12 @@ class OllamaClient:
 
     def _print_help(self) -> None:
         print("\n[HELP] Controls:")
-        cancel_help = "Press Ctrl+X OR type '.stop'" if (platform.system() == "Windows" and msvcrt) else f"Type '{self.CANCEL_KEYWORD}'"
-        print(f"  - {cancel_help} to cancel the current turn")
+        if msvcrt:
+            print(f"  - Press Ctrl+X OR type '{self.CANCEL_KEYWORD}' to cancel the current turn (works mid-generation)")
+            print("    Ctrl+X needs a native console (cmd.exe/PowerShell/Windows Terminal run directly).")
+            print("    It may not register in VSCode's integrated terminal or Git Bash — '.stop' always works.")
+        else:
+            print(f"  - Type '{self.CANCEL_KEYWORD}' anytime to cancel the current turn (works mid-generation)")
         print("  - Type 'exit' or 'quit' to close the agent")
         print("  - Press Ctrl+C to exit the agent immediately")
-        print("="  * 60)
+        print("=" * 60)
