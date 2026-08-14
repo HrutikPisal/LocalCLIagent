@@ -132,8 +132,6 @@ def setup_ollama() -> bool:
     print("[BOT] Ollama Setup")
     print("=" * 60)
 
-    check_available_ram()
-
     model_name = get_default_model()
 
     print(f"\n[CHECK] Checking Ollama server...")
@@ -166,6 +164,14 @@ def ensure_ollama_ready() -> bool:
     Ensure Ollama is ready to use. Runs full setup if needed.
     Returns True if ready, False if manual intervention required.
     """
+    # Checked here unconditionally, not inside setup_ollama(): when Ollama is already
+    # running from a previous session (the common case on repeat runs), the fast path
+    # below returns immediately and setup_ollama() never executes, which silently
+    # skipped this warning entirely on every run except the very first. Confirmed via
+    # today's log (2026-08-14): available RAM had dropped to 0.27GB (96.5% used) with
+    # no warning ever shown, because Ollama was already running from an earlier session.
+    check_available_ram()
+
     if is_ollama_running() and model_exists(get_default_model()):
         return True
 
