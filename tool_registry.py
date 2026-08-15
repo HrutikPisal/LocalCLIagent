@@ -326,7 +326,9 @@ TOOLS_SCHEMA = [
     ),
     _schema(
         "create_file",
-        "Create a new file in the workspace.",
+        "Create a NEW file in the workspace. Fails with an error if the path already "
+        "exists — use this only when the file should not exist yet. To overwrite an "
+        "existing file, or when you're not sure if it exists, use write_file instead.",
         {
             "path": {"type": "string", "description": "File path to create."},
             "content": {"type": "string", "description": "Initial file content."},
@@ -335,7 +337,10 @@ TOOLS_SCHEMA = [
     ),
     _schema(
         "write_file",
-        "Write content to a file in the workspace.",
+        "Write content to a file in the workspace, creating it if it doesn't exist "
+        "and OVERWRITING it without warning if it does. Use this to update/replace a "
+        "file's contents. To create a file that must NOT already exist, use "
+        "create_file instead, which fails safely if the path is already taken.",
         {
             "path": {"type": "string", "description": "File path."},
             "content": {"type": "string", "description": "Content to write."},
@@ -344,7 +349,9 @@ TOOLS_SCHEMA = [
     ),
     _schema(
         "rename_file",
-        "Rename a file within the workspace.",
+        "Rename a file within the workspace. Returns the exact new path as "
+        "'destination' in its JSON result — when reporting the outcome, quote that "
+        "field exactly; the old filename is no longer valid once this succeeds.",
         {
             "source": {"type": "string", "description": "Current file path."},
             "destination": {"type": "string", "description": "New file path."},
@@ -353,7 +360,9 @@ TOOLS_SCHEMA = [
     ),
     _schema(
         "copy_file",
-        "Copy a file within the workspace.",
+        "Copy a file within the workspace. Returns the exact 'source' and "
+        "'destination' paths in its JSON result — quote them exactly; both files "
+        "exist after this succeeds, so do not conflate the two paths.",
         {
             "source": {"type": "string", "description": "Source file path."},
             "destination": {"type": "string", "description": "Destination file path."},
@@ -362,7 +371,11 @@ TOOLS_SCHEMA = [
     ),
     _schema(
         "move_file",
-        "Move a file within the workspace.",
+        "Move a file within the workspace. Returns the exact 'destination' path in "
+        "its JSON result — when reporting the outcome, quote that field exactly. If "
+        "this file was renamed or moved earlier in the conversation, any name used "
+        "for it before this call is now stale; only this result's 'destination' is "
+        "current.",
         {
             "source": {"type": "string", "description": "Source file path."},
             "destination": {"type": "string", "description": "Destination file path."},
@@ -396,11 +409,14 @@ TOOLS_SCHEMA = [
     ),
     _schema(
         "git_push",
-        "Push commits to a remote git repository.",
+        "Push commits to a remote git repository. Both remote and branch are "
+        "optional — omit them to push the current branch to 'origin' (the default "
+        "for both); only set them explicitly if the user names a different remote "
+        "or branch.",
         {
             "directory": {"type": "string", "description": "Repository directory."},
-            "remote": {"type": "string", "description": "Remote name."},
-            "branch": {"type": "string", "description": "Branch name."},
+            "remote": {"type": "string", "description": "Remote name (default: 'origin')."},
+            "branch": {"type": "string", "description": "Branch name (default: current branch)."},
         },
     ),
     _schema(
@@ -471,28 +487,44 @@ TOOLS_SCHEMA = [
     ),
     _schema(
         "run_command",
-        "Run a shell command and capture output.",
+        "Run a command in a specific working directory, with accurate success/failure "
+        "reporting (fails if the command's exit code is non-zero). Prefer this tool "
+        "when cwd matters or you need to know whether the command actually succeeded. "
+        "By default (shell=false) the command is split on whitespace, NOT parsed like "
+        "a real shell — quoted arguments containing spaces will break; set shell=true "
+        "to run it as a real shell command line instead (e.g. with pipes or quotes).",
         {
-            "command": {"type": "string", "description": "Command to run"},
-            "cwd": {"type": "string", "description": "Working directory"},
-            "shell": {"type": "boolean", "description": "Use shell mode"},
+            "command": {"type": "string", "description": "Command to run, e.g. 'git status' or 'dir C:\\Users'."},
+            "cwd": {"type": "string", "description": "Working directory to run the command in."},
+            "shell": {"type": "boolean", "description": "Set true for shell syntax (pipes, quotes); false (default) does a naive whitespace split."},
         },
         required=["command"],
     ),
     _schema(
         "get_output",
-        "Execute a command and return only stdout.",
+        "Run a simple command and get back only its stdout text, nothing else. "
+        "Always runs as a real shell command in the current working directory (no cwd "
+        "parameter — cannot target a different folder). Treats a non-zero exit code as "
+        "a tool failure with no output returned, so this is best for read-only "
+        "commands you expect to succeed (e.g. 'python --version', 'echo %PATH%'), not "
+        "for commands where you need to inspect stderr or a non-zero exit code.",
         {
-            "command": {"type": "string", "description": "Command to execute"},
+            "command": {"type": "string", "description": "Command to execute, e.g. 'python --version'."},
         },
         required=["command"],
     ),
     _schema(
         "execute_command",
-        "Execute a shell command with full output capture.",
+        "Run a shell command and get back full diagnostics: stdout, stderr, AND the "
+        "return code, in a specific working directory. IMPORTANT: this tool always "
+        "reports success at the top level even if the command itself failed — to know "
+        "whether the command actually succeeded, check the 'return_code' field (0 "
+        "means success) or the nested 'success' field in the result, not just the "
+        "top-level result. Use this over get_output when you need stderr or the exit "
+        "code, and over run_command when you need shell syntax like pipes or quotes.",
         {
-            "command": {"type": "string", "description": "Command to execute"},
-            "cwd": {"type": "string", "description": "Working directory"},
+            "command": {"type": "string", "description": "Command to execute."},
+            "cwd": {"type": "string", "description": "Working directory to run the command in."},
         },
         required=["command"],
     ),
@@ -503,9 +535,12 @@ TOOLS_SCHEMA = [
     ),
     _schema(
         "find_process_by_name",
-        "Find processes matching a name pattern.",
+        "Find processes whose name contains the given text — this is a "
+        "case-insensitive SUBSTRING match, not an exact match (e.g. 'chrome' will "
+        "also match 'chromedriver.exe'). If you need an exact single process, check "
+        "the returned names/PIDs before acting on the result.",
         {
-            "name": {"type": "string", "description": "Process name to search"},
+            "name": {"type": "string", "description": "Process name or substring to search for, e.g. 'python' or 'chrome'."},
         },
         required=["name"],
     ),
@@ -573,9 +608,11 @@ TOOLS_SCHEMA = [
     ),
     _schema(
         "install_requirements",
-        "Install packages from a requirements.txt file.",
+        "Install packages from a requirements file. The path is required — there is "
+        "no default. Typically this is 'requirements.txt' in the project root, but "
+        "confirm the actual filename/location rather than assuming it.",
         {
-            "requirements_file": {"type": "string", "description": "Path to requirements.txt"},
+            "requirements_file": {"type": "string", "description": "Path to the requirements file, typically 'requirements.txt'."},
             "directory": {"type": "string", "description": "Project directory"},
         },
         required=["requirements_file"],
