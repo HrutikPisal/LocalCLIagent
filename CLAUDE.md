@@ -435,3 +435,51 @@ When adding a tool, verify:
 - **Audit Conclusions**: [documents/AUDIT_CONCLUSIONS.md](documents/AUDIT_CONCLUSIONS.md)
 - **Next Steps**: [documents/CLEANUP_ACTION_PLAN.md](documents/CLEANUP_ACTION_PLAN.md)
 
+
+
+# Development Workflow
+
+## Daily Development Rule
+
+This repository follows a "one meaningful commit per day" policy.
+
+Every development session should result in at least one of the following:
+
+- Add a new feature
+- Fix an edge case
+- Improve CLI commands
+- Improve performance
+- Add or improve tests
+- Improve documentation
+- Refactor code
+- Improve prompts or AI behavior
+- Fix bugs
+- Improve error handling
+
+Before ending every coding session:
+
+1. Summarize today's work.
+2. Update README if required.
+3. Update plan.md with completed tasks.
+4. Suggest a meaningful git commit message.
+5. Ask whether to commit and push.
+6. If nothing substantial was completed, recommend one small improvement that can be finished in 15–30 minutes.
+
+Commit message format:
+
+feat: add voice command support
+
+fix: handle empty CLI input
+
+refactor: simplify command routing
+
+docs: update installation guide
+
+test: add evaluation dataset tests
+
+perf: reduce model initialization time
+
+Never recommend skipping a daily commit.
+Always encourage incremental progress.
+
+
