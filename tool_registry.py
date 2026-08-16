@@ -328,7 +328,12 @@ TOOLS_SCHEMA = [
         "create_file",
         "Create a NEW file in the workspace. Fails with an error if the path already "
         "exists — use this only when the file should not exist yet. To overwrite an "
-        "existing file, or when you're not sure if it exists, use write_file instead.",
+        "existing file, or when you're not sure if it exists, use write_file instead. "
+        "If this call's JSON result has success=false, NO write happened at all — the "
+        "file's existing contents (whatever they were before this call) are unchanged. "
+        "Do not state or imply what the file now contains after a failed call; only "
+        "report the error, or call write_file/read_file if you need to actually change "
+        "or check the content.",
         {
             "path": {"type": "string", "description": "File path to create."},
             "content": {"type": "string", "description": "Initial file content."},
@@ -388,12 +393,17 @@ TOOLS_SCHEMA = [
         {"path": {"type": "string", "description": "File path to delete."}},
         required=["path"],
     ),
-    _schema("pip_list", "List installed Python packages.", {}),
+    _schema("pip_list", "List installed Python packages, as raw pip/JSON output. "
+            "Equivalent to list_installed_packages — either works, this is just the "
+            "shorter-named one.", {}),
     _schema(
         "pip_install",
-        "Install a Python package using pip.",
+        "Install a SINGLE named Python package with pip (e.g. 'requests' or "
+        "'numpy==1.26'). Do NOT use this for installing everything listed in a "
+        "requirements file — use install_requirements for that instead, since this "
+        "tool takes one package name, not a file path.",
         {
-            "package": {"type": "string", "description": "Package name."},
+            "package": {"type": "string", "description": "Package name to install, e.g. 'requests' or 'numpy==1.26'."},
             "directory": {"type": "string", "description": "Optional project directory."},
         },
         required=["package"],
@@ -599,18 +609,22 @@ TOOLS_SCHEMA = [
     ),
     _schema(
         "install_package",
-        "Install a package using pip.",
+        "Install a SINGLE named Python package with pip. Equivalent to pip_install — "
+        "either works, this is just the alternate name. Do NOT use this for a "
+        "requirements file; use install_requirements for that instead.",
         {
-            "package": {"type": "string", "description": "Package name"},
+            "package": {"type": "string", "description": "Package name to install, e.g. 'requests' or 'numpy==1.26'."},
             "directory": {"type": "string", "description": "Project directory"},
         },
         required=["package"],
     ),
     _schema(
         "install_requirements",
-        "Install packages from a requirements file. The path is required — there is "
-        "no default. Typically this is 'requirements.txt' in the project root, but "
-        "confirm the actual filename/location rather than assuming it.",
+        "Install ALL packages listed in a requirements file in one call — NOT for "
+        "installing a single named package (use pip_install or install_package for "
+        "that instead, they take a package name, not a file path). The path is "
+        "required — there is no default. Typically this is 'requirements.txt' in the "
+        "project root, but confirm the actual filename/location rather than assuming it.",
         {
             "requirements_file": {"type": "string", "description": "Path to the requirements file, typically 'requirements.txt'."},
             "directory": {"type": "string", "description": "Project directory"},
@@ -619,7 +633,8 @@ TOOLS_SCHEMA = [
     ),
     _schema(
         "list_installed_packages",
-        "List all installed Python packages.",
+        "List all installed Python packages. Equivalent to pip_list — either works, "
+        "this is just the longer-named one.",
         {},
     ),
 ]
