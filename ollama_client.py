@@ -132,38 +132,33 @@ class OllamaClient:
                 return "(Turn cancelled.)"
 
             if time.monotonic() >= turn_deadline:
-                timeout_message = (
-                    f"(Stopped: this turn exceeded {self.MAX_TURN_SECONDS}s without "
-                    "finishing. The model may be stuck retrying, or the machine may be "
-                    "overloaded — try a simpler question, or check that Ollama is still "
-                    "responsive.)"
-                )
-                self.conversation.add_assistant(timeout_message)
-                self.logger.log_response(self.model, timeout_message, tools_used)
-                return timeout_message
+                return self._finish(tools_used, self._timeout_message())
 
             message = self._stream_chat(turn_deadline)
 
-            if self.cancel_requested:
+            # stopped_reason is set explicitly by _stream_chat() itself, not inferred
+            # from "content came back empty" — that ambiguity is exactly what caused a
+            # deadline-triggered cutoff to be misreported as "ran out of context" in
+            # logs/agent_15_08_2026.txt (3 separate turns, all >600s, all mislabeled).
+            if message["stopped_reason"] == "cancelled":
                 return "(Turn cancelled.)"
+            if message["stopped_reason"] == "timeout":
+                return self._finish(tools_used, self._timeout_message())
 
             if not message.get("tool_calls"):
                 final_content = (message.get("content") or "").strip()
                 if not final_content:
                     final_content = (
-                        "(I wasn't able to generate a response for that. "
-                        "This can happen when the model runs out of context on a large "
-                        "tool result — try asking a more specific question, or ask again.)"
+                        "(The model finished without producing any text for that. "
+                        "This can happen when a tool result used up most of the "
+                        "available context — try asking a more specific question, or "
+                        "ask again.)"
                     )
-                self.conversation.add_assistant(final_content)
-                self.logger.log_response(self.model, final_content, tools_used)
-                return final_content
+                return self._finish(tools_used, final_content)
 
             if len(tools_used) >= self.MAX_TOOL_CALLS_PER_TURN:
                 stop_message = "(Stopped: reached the maximum number of chained tool calls for this turn.)"
-                self.conversation.add_assistant(stop_message)
-                self.logger.log_response(self.model, stop_message, tools_used)
-                return stop_message
+                return self._finish(tools_used, stop_message)
 
             self.conversation.add_assistant_tool_calls({
                 "role": "assistant",
@@ -183,11 +178,36 @@ class OllamaClient:
             if self.cancel_requested:
                 return "(Turn cancelled during tool execution.)"
 
+    def _finish(self, tools_used: list, message: str) -> str:
+        """Record and return a turn's final message. Centralizes the
+        add_assistant()/log_response() pair so every terminal branch of
+        _complete_turn() logs consistently instead of repeating it inline."""
+        self.conversation.add_assistant(message)
+        self.logger.log_response(self.model, message, tools_used)
+        return message
+
+    def _timeout_message(self) -> str:
+        return (
+            f"(Stopped: this turn exceeded {self.MAX_TURN_SECONDS}s without "
+            "finishing. The model may be stuck retrying, or the machine may be "
+            "overloaded — try a simpler question, or check that Ollama is still "
+            "responsive.)"
+        )
+
     def _stream_chat(self, turn_deadline: float) -> dict:
-        """Stream a chat response, checking cancel_requested and the turn
-        deadline after every chunk so a turn can be interrupted mid-generation
-        (including during a single, long, tool-free response) instead of only
-        between tool-call rounds or after the full response completes."""
+        """Stream a chat response, checking cancel_requested and the turn deadline
+        after every chunk so a turn can be interrupted mid-generation (including
+        during a single, long, tool-free response) instead of only between
+        tool-call rounds or after the full response completes.
+
+        Always returns a "stopped_reason" key so callers know exactly why the
+        stream ended instead of having to infer it from empty content:
+          - None: the model finished generating on its own (normal completion,
+            content/tool_calls reflect what it actually produced, possibly empty)
+          - "cancelled": cut short by the user's cancel signal (.stop / Ctrl+X)
+          - "timeout": cut short by the turn deadline; content/tool_calls are
+            whatever had been generated so far and should be treated as partial
+        """
         stream = ollama.chat(
             model=self.model,
             messages=self.conversation.history(),
@@ -198,9 +218,14 @@ class OllamaClient:
 
         content_parts = []
         tool_calls = None
+        stopped_reason = None
         try:
             for chunk in stream:
-                if self.cancel_requested or time.monotonic() >= turn_deadline:
+                if self.cancel_requested:
+                    stopped_reason = "cancelled"
+                    break
+                if time.monotonic() >= turn_deadline:
+                    stopped_reason = "timeout"
                     break
                 msg = chunk.get("message", {})
                 if msg.get("content"):
@@ -212,7 +237,7 @@ class OllamaClient:
             if callable(close):
                 close()
 
-        result = {"content": "".join(content_parts)}
+        result = {"content": "".join(content_parts), "stopped_reason": stopped_reason}
         if tool_calls:
             result["tool_calls"] = tool_calls
         return result
