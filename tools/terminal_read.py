@@ -23,12 +23,11 @@ def execute_command(command: str, cwd: str = ".") -> str:
         )
 
         return tool_result(
-            True,
+            result.returncode == 0,
             command=command,
             return_code=result.returncode,
             stdout=result.stdout,
             stderr=result.stderr,
-            success=result.returncode == 0,
         )
 
     except subprocess.TimeoutExpired:

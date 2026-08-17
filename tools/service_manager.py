@@ -102,8 +102,7 @@ def start_service(service_name: str) -> str:
 
         success = returncode == 0
         return tool_result(
-            True,
-            success=success,
+            success,
             service_name=service_name.strip(),
             message=stdout or stderr,
         )
@@ -124,8 +123,7 @@ def stop_service(service_name: str) -> str:
 
         success = returncode == 0
         return tool_result(
-            True,
-            success=success,
+            success,
             service_name=service_name.strip(),
             message=stdout or stderr,
         )
@@ -149,8 +147,7 @@ def restart_service(service_name: str) -> str:
 
         success = returncode == 0
         return tool_result(
-            True,
-            success=success,
+            success,
             service_name=service_name.strip(),
             message=stdout or stderr,
         )

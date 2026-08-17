@@ -468,11 +468,18 @@ TOOLS_SCHEMA = [
     ),
     _schema(
         "edit_file",
-        "Find and replace text in a file.",
+        "Replace an EXACT, EXISTING piece of text inside a file with new text — this "
+        "is a targeted find/replace, not a way to set a file's whole content. 'find' "
+        "must be a non-empty string that already appears in the file (checked as a "
+        "literal substring, not a pattern), and ALL occurrences of it are replaced. "
+        "Fails if 'find' is empty or not present in the file — if you don't know the "
+        "exact existing text, read_file first. To replace an entire file's content "
+        "wholesale (e.g. 'update/change this file to say X'), use write_file instead; "
+        "edit_file is for small, targeted, in-place changes only.",
         {
             "path": {"type": "string", "description": "File path"},
-            "find": {"type": "string", "description": "Text to find"},
-            "replace": {"type": "string", "description": "Text to replace with"},
+            "find": {"type": "string", "description": "Exact, non-empty existing text to find (all occurrences are replaced)."},
+            "replace": {"type": "string", "description": "Text to replace it with"},
         },
         required=["path", "find", "replace"],
     ),
@@ -525,13 +532,10 @@ TOOLS_SCHEMA = [
     ),
     _schema(
         "execute_command",
-        "Run a shell command and get back full diagnostics: stdout, stderr, AND the "
-        "return code, in a specific working directory. IMPORTANT: this tool always "
-        "reports success at the top level even if the command itself failed — to know "
-        "whether the command actually succeeded, check the 'return_code' field (0 "
-        "means success) or the nested 'success' field in the result, not just the "
-        "top-level result. Use this over get_output when you need stderr or the exit "
-        "code, and over run_command when you need shell syntax like pipes or quotes.",
+        "Run a shell command and get back full diagnostics: stdout, stderr, the "
+        "return code, AND an accurate top-level success flag, in a specific working "
+        "directory. Use this over get_output when you need stderr or the exit code, "
+        "and over run_command when you need shell syntax like pipes or quotes.",
         {
             "command": {"type": "string", "description": "Command to execute."},
             "cwd": {"type": "string", "description": "Working directory to run the command in."},
@@ -572,38 +576,54 @@ TOOLS_SCHEMA = [
     ),
     _schema(
         "list_services",
-        "List all Windows services.",
+        "List all Windows services by their short internal name (e.g. 'wuauserv'), "
+        "not their display name (e.g. 'Windows Update'). Use this first if you don't "
+        "already know a service's exact internal name.",
         {},
     ),
     _schema(
         "get_service_status",
-        "Get status of a Windows service.",
+        "Get status of a Windows service. Requires the short internal service name "
+        "(e.g. 'wuauserv'), NOT the human-readable display name (e.g. 'Windows "
+        "Update') — the underlying command does not reliably resolve display names. "
+        "If you only know the display name, call list_services first to find the "
+        "matching internal name.",
         {
-            "service_name": {"type": "string", "description": "Service name"},
+            "service_name": {"type": "string", "description": "Internal service name, e.g. 'wuauserv' — not the display name."},
         },
         required=["service_name"],
     ),
     _schema(
         "start_service",
-        "Start a Windows service.",
+        "Start a Windows service. Requires the short internal service name (e.g. "
+        "'wuauserv'), NOT the display name — see get_service_status for details. "
+        "Note the JSON result's 'success' field reflects whether the service actually "
+        "started; check it rather than assuming success just because the call returned.",
         {
-            "service_name": {"type": "string", "description": "Service name"},
+            "service_name": {"type": "string", "description": "Internal service name, e.g. 'wuauserv' — not the display name."},
         },
         required=["service_name"],
     ),
     _schema(
         "stop_service",
-        "Stop a Windows service.",
+        "Stop a Windows service. Requires the short internal service name (e.g. "
+        "'wuauserv'), NOT the display name — see get_service_status for details. "
+        "Note the JSON result's 'success' field reflects whether the service actually "
+        "stopped; check it rather than assuming success just because the call returned.",
         {
-            "service_name": {"type": "string", "description": "Service name"},
+            "service_name": {"type": "string", "description": "Internal service name, e.g. 'wuauserv' — not the display name."},
         },
         required=["service_name"],
     ),
     _schema(
         "restart_service",
-        "Restart a Windows service.",
+        "Restart a Windows service (stop then start). Requires the short internal "
+        "service name (e.g. 'wuauserv'), NOT the display name — see "
+        "get_service_status for details. Note the JSON result's 'success' field "
+        "reflects whether it actually restarted; check it rather than assuming "
+        "success just because the call returned.",
         {
-            "service_name": {"type": "string", "description": "Service name"},
+            "service_name": {"type": "string", "description": "Internal service name, e.g. 'wuauserv' — not the display name."},
         },
         required=["service_name"],
     ),
