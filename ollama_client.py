@@ -7,8 +7,10 @@ import ollama
 
 from config import get_default_model, get_system_prompt
 from logger import AgentLogger
+from ollama_setup import check_available_ram
 from tool_executor import ToolExecutor
 from tool_registry import TOOLS_SCHEMA
+from tools.path_utils import tool_result
 
 # Ctrl+X cancel support (Windows only) via msvcrt raw keystroke reads.
 #
@@ -50,13 +52,16 @@ class OllamaClient:
 
     # Hard ceiling on total turn wall-clock time, as a last-resort safety net against
     # genuine hangs (e.g. a wrong-tool retry loop, or Ollama becoming unresponsive).
-    # Deliberately generous, not tuned for snappy UX: on this project's reference
-    # hardware (CPU-only inference, qwen2.5:3b), a single non-tool-call response after
-    # a large tool result has been observed taking up to ~9 minutes end-to-end. A short
-    # timeout (e.g. 90-120s) would abort that legitimate case constantly. 600s (10 min)
-    # is chosen as a ceiling that still lets normal slow-but-working turns finish, while
-    # capping runaway multi-tool-call loops that would otherwise run unbounded.
-    MAX_TURN_SECONDS = 600
+    # Deliberately generous, not tuned for snappy UX. Originally set to 600s (10 min)
+    # based on an observed ~9 minute legitimate completion, but logs/agent_15_08_2026.txt
+    # and logs/agent_17_08_2026.txt both show turns being cut off at exactly 600s that
+    # would very likely have finished given more time - i.e. 600s was already too short
+    # on this hardware, not just a comfortable margin. Raised to 1800s (30 min) on a
+    # RAM/SSD-constrained machine where inference is markedly slower than the original
+    # reference hardware. This means a genuine hang now takes longer to be caught by
+    # this safety net - .stop/Ctrl+X remain the fast way to bail out of a turn that's
+    # taking too long, rather than waiting for this ceiling.
+    MAX_TURN_SECONDS = 1800
 
     # Soft cap on generated tokens per model turn. This does not by itself prevent
     # context-window overflow (that's addressed by trimming large tool outputs before
@@ -105,6 +110,13 @@ class OllamaClient:
             self.conversation.add_user(user_input)
             self.logger.log_prompt(user_input)
 
+            # Re-checked here, not just once at CLIagent.py startup: this week's logs
+            # show RAM dropping from a healthy level to under 0.5GB free over the course
+            # of a multi-hour session (see documents/LOG_AUDIT_2026-08-18_19.md) - a
+            # session that starts fine can still degrade badly by the time this specific
+            # turn runs, and the startup-only check would never catch that drift.
+            check_available_ram()
+
             print("[AGENT] Thinking... (this model can take a while on this machine; "
                   f"type '{self.CANCEL_KEYWORD}' anytime to cancel)", flush=True)
 
@@ -125,6 +137,7 @@ class OllamaClient:
 
     def _complete_turn(self) -> str:
         tools_used = []
+        seen_calls = set()
         turn_deadline = time.monotonic() + self.MAX_TURN_SECONDS
 
         while True:
@@ -172,7 +185,35 @@ class OllamaClient:
 
                 tool_name = tool_call["function"]["name"]
                 tools_used.append(tool_name)
-                tool_output = self.executor.execute(tool_call)
+
+                # Detect an identical (tool, arguments) pair already called this turn.
+                # Seen 2026-08-18: execute_command succeeded immediately, then the same
+                # command got re-run through get_output three more times with identical
+                # results each time, never converging, burning the full 1800s ceiling
+                # without ever producing a final answer. Real tool execution (and the
+                # multi-minute model latency around it) is skipped for the repeat; a
+                # short synthetic result is returned instead so the model has something
+                # to read without paying for another live subprocess/network call. This
+                # still counts toward MAX_TOOL_CALLS_PER_TURN like a normal call, so it
+                # can't be repeated indefinitely even if the model ignores the nudge.
+                raw_args = tool_call["function"]["arguments"]
+                parsed_args = ToolExecutor._parse_arguments(raw_args)
+                call_key = (tool_name, json.dumps(parsed_args, sort_keys=True))
+
+                if call_key in seen_calls:
+                    tool_output = tool_result(
+                        False,
+                        error=(
+                            f"'{tool_name}' was already called this turn with these exact "
+                            "arguments — not re-running it. Use the result already shown "
+                            "above, or call a different tool/arguments if that result "
+                            "wasn't what you needed."
+                        ),
+                    )
+                else:
+                    seen_calls.add(call_key)
+                    tool_output = self.executor.execute(tool_call)
+
                 self.conversation.add_tool(tool_name, tool_output)
 
             if self.cancel_requested:

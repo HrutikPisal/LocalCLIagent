@@ -9,7 +9,22 @@ from tools.path_utils import resolve_path, tool_result
 def edit_file(path: str, find: str, replace: str) -> str:
     """Find and replace text in a file."""
     if not find:
-        return tool_result(False, error="Find text must not be empty.")
+        # An empty 'find' is the direct symptom of trying to replace a file's whole
+        # content via edit_file instead of write_file - seen repeatedly (2026-08-15,
+        # 08-17, 08-19; see documents/LOG_AUDIT_2026-08-18_19.md). The equivalent
+        # guidance in this tool's own schema description has been tried multiple
+        # times and hasn't reliably prevented the mistake, so it's repeated here in
+        # the error message itself instead, since a tool's own output is guaranteed
+        # to be re-read on the very next turn.
+        return tool_result(
+            False,
+            error=(
+                "Find text must not be empty. If you're trying to replace this "
+                "file's entire content (not a specific piece of text within it), "
+                "use write_file instead — it takes the new content directly and "
+                "doesn't need a 'find' value at all."
+            ),
+        )
 
     try:
         file_path = resolve_path(path)

@@ -367,10 +367,13 @@ TOOLS_SCHEMA = [
         "copy_file",
         "Copy a file within the workspace. Returns the exact 'source' and "
         "'destination' paths in its JSON result — quote them exactly; both files "
-        "exist after this succeeds, so do not conflate the two paths.",
+        "exist after this succeeds, so do not conflate the two paths. 'destination' "
+        "must be relative to the workspace root (e.g. 'logs/app.log') — do NOT start "
+        "it with a slash ('/logs/app.log'), which resolves to the drive root instead "
+        "of the workspace and will be denied.",
         {
             "source": {"type": "string", "description": "Source file path."},
-            "destination": {"type": "string", "description": "Destination file path."},
+            "destination": {"type": "string", "description": "Destination file path, relative to the workspace root — no leading slash, e.g. 'logs/app.log' not '/logs/app.log'."},
         },
         required=["source", "destination"],
     ),
@@ -380,10 +383,12 @@ TOOLS_SCHEMA = [
         "its JSON result — when reporting the outcome, quote that field exactly. If "
         "this file was renamed or moved earlier in the conversation, any name used "
         "for it before this call is now stale; only this result's 'destination' is "
-        "current.",
+        "current. 'destination' must be relative to the workspace root (e.g. "
+        "'docs/draft.txt') — do NOT start it with a slash ('/docs/draft.txt'), which "
+        "resolves to the drive root instead of the workspace and will be denied.",
         {
             "source": {"type": "string", "description": "Source file path."},
-            "destination": {"type": "string", "description": "Destination file path."},
+            "destination": {"type": "string", "description": "Destination file path, relative to the workspace root — no leading slash, e.g. 'docs/draft.txt' not '/docs/draft.txt'."},
         },
         required=["source", "destination"],
     ),

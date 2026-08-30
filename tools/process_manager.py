@@ -91,16 +91,25 @@ def kill_process(pid: int) -> str:
 
     try:
         if sys.platform == "win32":
-            subprocess.run(
+            result = subprocess.run(
                 ["taskkill", "/PID", str(pid), "/F"],
                 capture_output=True,
+                text=True,
                 timeout=5,
             )
         else:
-            subprocess.run(
+            result = subprocess.run(
                 ["kill", "-9", str(pid)],
                 capture_output=True,
+                text=True,
                 timeout=5,
+            )
+
+        if result.returncode != 0:
+            return tool_result(
+                False,
+                pid=pid,
+                error=(result.stderr or result.stdout or "Kill command failed.").strip(),
             )
 
         return tool_result(
