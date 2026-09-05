@@ -61,3 +61,6 @@ config/local_*.json
 temp/
 temp_*
 .claude/
+
+# Internal dev notes, audits, and raw test-run artifacts — not needed to use the agent
+local-only/

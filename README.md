@@ -163,12 +163,8 @@ wherever you cloned/downloaded it, no configuration needed (overridable in
 
 ## 📚 Documentation
 
-- **[documents/QUICKSTART.md](documents/QUICKSTART.md)** — 30-second setup guide
-- **[documents/RUN_CHECKLIST.md](documents/RUN_CHECKLIST.md)** — Step-by-step manual setup
 - **[documents/OLLAMA_AUTO_SETUP.md](documents/OLLAMA_AUTO_SETUP.md)** — Automatic Ollama management
 - **[documents/HALLUCINATION_FIXES.md](documents/HALLUCINATION_FIXES.md)** — How model accuracy was improved
-- **[documents/FEATURE_SUMMARY.md](documents/FEATURE_SUMMARY.md)** — Complete feature overview
-- **[documents/plan.md](documents/plan.md)** — Long-term vision and architecture
 - **[CLAUDE.md](CLAUDE.md)** — Architecture guide for AI coding assistants working in this repo
 
 ## 📋 Project Structure
@@ -325,7 +321,7 @@ cat tests/cli_agent_evaluation_dataset.json
 
 ## 📄 License
 
-This project is provided as an open-source prototype.
+MIT — see [LICENSE](LICENSE).
 
 ## 🤝 Contributing
 

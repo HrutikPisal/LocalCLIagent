@@ -57,7 +57,7 @@ def tool_function(arg: str) -> str:
 
 3. **Test** the function in isolation before registering.
 
-See [documents/TOOLS_IMPLEMENTATION_SUMMARY.md](documents/TOOLS_IMPLEMENTATION_SUMMARY.md) for examples of 8 recently added tools.
+See `tools/` for existing tools to use as a pattern reference.
 
 ---
 
@@ -283,7 +283,7 @@ print(json.dumps(result, indent=2))
 python -c "from tool_registry import TOOL_MAP; print(f'Registered tools: {len(TOOL_MAP)}')"
 ```
 
-Expected: 56 tools (after registering the 8 newly implemented tools)
+Expected: 43 tools
 
 ### Verify No Regressions
 
@@ -296,23 +296,12 @@ python test_new_tools.py     # Just new tools (isolated)
 
 ## Current Project Status
 
-**Completion**: 87% (as of August 8, 2026)
-
-### What's Done ✅
-- 9 core architecture files (100%)
-- 36 tools implemented (95% — 8 need registry registration)
-- 27 tests passing (100%)
-- Complete documentation (11 files)
-
-### What's Needed ⏳
-- Register 8 new tools in tool_registry.py (30 min)
-- Delete 5 redundant empty files (5 min)
-- Update README with new tool list (30 min)
+**Status**: Working prototype — 9 core architecture files, 43 tools registered and functional, evaluation dataset + smoke tests passing.
 
 ### What's Deferred to Phase 3
-- Voice input/output module (40 hours, planned)
+- Voice input/output module (planned, not started)
 
-See [documents/CODEBASE_AUDIT.md](documents/CODEBASE_AUDIT.md) for complete audit or [documents/CLEANUP_ACTION_PLAN.md](documents/CLEANUP_ACTION_PLAN.md) for immediate next steps.
+Internal audit notes, cleanup logs, and progress history live locally under `local-only/` (gitignored — not part of the public repo) rather than in `documents/`.
 
 ---
 
@@ -354,33 +343,33 @@ Tools are imported ONLY in `tool_registry.py`. Main code imports `TOOL_MAP` and 
 ### Core (9 files, 728 LOC)
 - `CLIagent.py`, `config.py`, `conversation.py`, `ollama_client.py`, `ollama_setup.py`, `tool_executor.py`, `policy_engine.py`, `logger.py`, `tool_registry.py`
 
-### Tools (24 files, 843 LOC — 36 functions)
-- Filesystem: read, write, create, delete, rename, copy, move, edit, search (9 functions across 5 files)
-- Git: status, log, diff, commit, push (5 functions across 2 files)
-- Python: run_python, run_script (2 functions in 1 file)
-- Packages: pip_install, pip_list, install_requirements (3 functions across 2 files)
-- Network: network_info, ping, dns_lookup, check_port (4 functions in 1 file) **NEW**
-- Process: list, info, find, kill (4 functions in 1 file) **NEW**
-- Services: list, status, start, stop, restart (5 functions in 1 file) **NEW**
-- Terminal: run, get_output, execute (3 functions in 1 file) **NEW**
-- System: system_info (1 function in 1 file)
-- Discovery: get_tool_info (1 function in 1 file) **NEW**
+### Tools (21 files, 43 registered functions)
+- Filesystem: read, write, create, delete, rename, copy, move, edit, search
+- Git: status, log, diff, commit, push
+- Python: run_python, run_script
+- Packages: pip_install, pip_list, install_requirements
+- Network: network_info, ping, dns_lookup, check_port
+- Process: list, info, find, kill
+- Services: list, status, start, stop, restart
+- Terminal: run, get_output, execute
+- System: system_info
+- Discovery: get_tool_info
 
 ### Config (2 files)
 - `config/models.json` — LLM model selection
 - `config/policy.json` — Security policies
 
-### Tests (6 files)
-- `test_new_tools.py` — Isolated tests for 8 new tools (14 tests, all passing)
+### Tests
+- `test_new_tools.py` — Isolated tool tests
 - `tests/smoke_tests.py` — Full evaluation suite (requires Ollama)
 - `tests/cli_agent_evaluation_dataset.json` — 50+ test cases
+- `run_dataset_tests.py` — Evaluation dataset runner
 
-### Documentation (11 files)
-- `CODEBASE_AUDIT.md` — Complete audit with findings
-- `CLEANUP_ACTION_PLAN.md` — Step-by-step next steps
-- `AUDIT_CONCLUSIONS.md` — Conclusions and recommendations
-- `TOOLS_IMPLEMENTATION_SUMMARY.md` — Details on 8 new tools
-- Plus: README, plan, feature summaries, setup guides
+### Documentation
+- `README.md` — Setup, usage, tool reference
+- `documents/OLLAMA_AUTO_SETUP.md` — Automatic Ollama management
+- `documents/HALLUCINATION_FIXES.md` — How model accuracy was improved
+- Internal audit notes, architecture plan, and progress logs live locally under `local-only/` (gitignored, not in the public repo)
 
 ---
 
@@ -426,14 +415,9 @@ When adding a tool, verify:
 
 ## References
 
-- **Architecture Plan**: [documents/plan.md](documents/plan.md)
-- **Feature Summary**: [documents/FEATURE_SUMMARY.md](documents/FEATURE_SUMMARY.md)
-- **New Tools Details**: [documents/TOOLS_IMPLEMENTATION_SUMMARY.md](documents/TOOLS_IMPLEMENTATION_SUMMARY.md)
-- **Workspace Setup**: [documents/WORKSPACE_CONFIGURATION.md](documents/WORKSPACE_CONFIGURATION.md)
-- **Quick Audit**: [documents/AUDIT_QUICK_REFERENCE.txt](documents/AUDIT_QUICK_REFERENCE.txt)
-- **Detailed Audit**: [documents/CODEBASE_AUDIT.md](documents/CODEBASE_AUDIT.md)
-- **Audit Conclusions**: [documents/AUDIT_CONCLUSIONS.md](documents/AUDIT_CONCLUSIONS.md)
-- **Next Steps**: [documents/CLEANUP_ACTION_PLAN.md](documents/CLEANUP_ACTION_PLAN.md)
+- **Automatic Ollama Setup**: [documents/OLLAMA_AUTO_SETUP.md](documents/OLLAMA_AUTO_SETUP.md)
+- **Model Accuracy Notes**: [documents/HALLUCINATION_FIXES.md](documents/HALLUCINATION_FIXES.md)
+- Architecture plan, feature summaries, and audit history are kept locally under `local-only/documents/` (gitignored, not in the public repo).
 
 
 
