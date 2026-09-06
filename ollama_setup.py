@@ -31,11 +31,14 @@ from config import get_default_model
 OLLAMA_API_URL = "http://localhost:11434/api/tags"
 OLLAMA_TIMEOUT = 2
 
-# Threshold below which we warn before starting. Chosen from observed session logs
-# where available RAM dropped to ~0.79-0.95GB free on a 7.75GB machine while running
-# qwen2.5:3b (CPU-only inference); that same session ended with the Ollama server
-# process crashing entirely mid-request. Not a hard block — the user may still proceed.
-LOW_RAM_WARNING_GB = 1.5
+# Threshold below which we warn before starting. The 1.5GB floor was chosen from observed
+# session logs where available RAM dropped to ~0.79-0.95GB free on a 7.75GB machine while
+# running qwen2.5:3b (CPU-only inference); that same session ended with the Ollama server
+# process crashing entirely mid-request. Raised to 2.5GB now that the default model is
+# qwen2.5:7b-instruct (~4.7GB on disk, resident RAM plus KV cache noticeably higher than
+# 3B) — the same low-headroom crash risk applies sooner on a bigger model. Not a hard
+# block — the user may still proceed.
+LOW_RAM_WARNING_GB = 2.5
 
 
 def check_available_ram() -> None:

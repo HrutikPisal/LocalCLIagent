@@ -1019,7 +1019,7 @@
     "expected_tool": "none",
     "permission_level": "n/a",
     "expected_tool_output": null,
-    "expected_llm_response": "I'm running as qwen2.5:3b, served locally through Ollama.",
+    "expected_llm_response": "I'm running as qwen2.5:7b-instruct, served locally through Ollama.",
     "validation": {
       "tool_selected": false,
       "hallucination_allowed": false,

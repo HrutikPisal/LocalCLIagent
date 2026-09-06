@@ -40,7 +40,7 @@ python CLIagent.py
 
 On first run, the agent will automatically:
 - ✅ Detect if the Ollama server is running, and start it if it's installed but not running
-- ✅ Pull the default model (`qwen2.5:3b`, ~2GB) if it isn't already downloaded — needs
+- ✅ Pull the default model (`qwen2.5:7b-instruct`, ~4.7GB) if it isn't already downloaded — needs
   an internet connection and can take a few minutes
 - ✅ Warn if available RAM looks too low for comfortable local inference
 - ✅ Launch interactive chat, with the workspace boundary automatically set to wherever
@@ -210,15 +210,24 @@ Edit `config/models.json`:
 
 ```json
 {
-  "default": "qwen2.5:1.5b",  // Faster, less accurate
+  "default": "qwen2.5:7b-instruct",  // Default: most reliable at tool-calling
   "allowed": [
-    "qwen2.5:0.5b",
-    "qwen2.5:1.5b",
-    "qwen2.5:1.5b-instruct",
-    "qwen2.5:3b"              // Default: larger, more accurate
+    "qwen2.5:0.5b-instruct",
+    "qwen2.5:1.5b-instruct",         // Faster, less accurate
+    "qwen2.5:3b-instruct",           // Good middle ground on tighter RAM budgets
+    "qwen2.5:7b-instruct"
   ]
 }
 ```
+
+7B needs ~4.7GB on disk and noticeably more resident RAM (model + KV cache) than 3B —
+if you're on a tightly RAM-constrained machine (under ~8GB total), drop the default
+back to `qwen2.5:3b-instruct` instead.
+
+Always use the `-instruct` tagged variant. The bare tags (`qwen2.5:3b`, etc.) are the
+base/non-chat models — they aren't trained to follow a system prompt or use tools
+reliably, which is why the agent's tool-calling and "don't call tools for small talk"
+instructions were being ignored before this was fixed.
 
 ### Customize Workspace & Security
 
@@ -266,14 +275,15 @@ This runs entirely on your local hardware — there is no cloud fallback, so res
 speed depends heavily on your machine:
 
 - **CPU-only inference** (no GPU available to Ollama) can take anywhere from a few
-  seconds to several minutes per response for the default `qwen2.5:3b` model, especially
-  after a large tool result (e.g. a big directory listing) is fed back into context
-- **Low free RAM** (observed below ~1.5GB free) can slow inference further or cause the
+  seconds to several minutes per response for the default `qwen2.5:7b-instruct` model,
+  especially after a large tool result (e.g. a big directory listing) is fed back into context
+- **Low free RAM** (observed below ~2.5GB free) can slow inference further or cause the
   Ollama server to become unresponsive/crash — the agent prints a warning on startup if
-  this looks likely
+  this looks likely. If your machine has under ~8GB total RAM, use `qwen2.5:3b-instruct`
+  instead (see Configuration above).
 - If responses feel too slow, switch to a smaller model in `config/models.json`
-  (`qwen2.5:1.5b` or `qwen2.5:0.5b` are both already listed as allowed) — trades accuracy
-  for speed
+  (`qwen2.5:1.5b-instruct` or `qwen2.5:0.5b-instruct` are both already listed as allowed) —
+  trades accuracy for speed
 - Each turn has a generous 10-minute hard ceiling as a last-resort safety net against
   genuine hangs; it will not fire on normal slow-but-working responses
 

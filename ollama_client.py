@@ -1,5 +1,6 @@
 import json
 import platform
+import re
 import threading
 import time
 
@@ -11,6 +12,38 @@ from ollama_setup import check_available_ram
 from tool_executor import ToolExecutor
 from tool_registry import TOOLS_SCHEMA
 from tools.path_utils import tool_result
+
+# Canned replies for bare small talk, keyed by the message with punctuation stripped
+# and case-folded. Bypasses the model (and its tool schema/system prompt) entirely for
+# these, rather than relying on the model to obey the "don't call tools for greetings"
+# system-prompt rule every time — logs/agent_06_09_2026.txt showed qwen2.5:3b ignoring
+# that rule and calling list_installed_packages / get_output (with hallucinated empty
+# arguments) for a plain "Hi". Only exact whole-message matches short-circuit; anything
+# with extra words (e.g. "hi, can you check disk space") still goes to the model normally.
+GREETING_REPLIES = {
+    "hi": "Hi! How can I help you today?",
+    "hello": "Hello! How can I help you today?",
+    "hey": "Hey! How can I help you today?",
+    "yo": "Hey! How can I help you today?",
+    "good morning": "Good morning! How can I help you today?",
+    "good afternoon": "Good afternoon! How can I help you today?",
+    "good evening": "Good evening! How can I help you today?",
+    "how are you": "I'm doing well, thanks for asking! How can I help you today?",
+    "whats up": "Not much — how can I help you today?",
+    "thanks": "You're welcome!",
+    "thank you": "You're welcome!",
+    "thanks a lot": "You're welcome!",
+    "bye": "Goodbye!",
+    "goodbye": "Goodbye!",
+    "see you": "See you!",
+}
+_GREETING_STRIP_RE = re.compile(r"[^\w\s]")
+
+
+def _match_greeting(text: str) -> str | None:
+    normalized = _GREETING_STRIP_RE.sub("", text).strip().lower()
+    normalized = re.sub(r"\s+", " ", normalized)
+    return GREETING_REPLIES.get(normalized)
 
 # Ctrl+X cancel support (Windows only) via msvcrt raw keystroke reads.
 #
@@ -67,10 +100,22 @@ class OllamaClient:
     # context-window overflow (that's addressed by trimming large tool outputs before
     # they enter conversation history — see tools/read_directory.py, tools/search_files.py),
     # but it bounds worst-case generation time and avoids unbounded runaway output on this
-    # RAM-constrained machine. num_ctx is intentionally left at the model's default rather
-    # than being raised, since more context directly means more memory pressure on a
-    # machine that has already been observed running under 1GB free RAM.
+    # RAM-constrained machine.
     NUM_PREDICT = 800
+
+    # Ollama silently defaults num_ctx to 2048 tokens for any request that doesn't set it
+    # explicitly, regardless of what context length the model itself supports. Measured
+    # 2026-09-06 (see logs/agent_06_09_2026.txt): the system prompt (~940 tokens) plus the
+    # full TOOLS_SCHEMA (~4900 tokens for 43 tools) already total ~5900 tokens BEFORE the
+    # user's message or any conversation history — comfortably blowing past that 2048
+    # default on every single turn. The resulting silent truncation was cutting off the
+    # system prompt's grounding/tool-usage rules, which is why the model was calling tools
+    # (with hallucinated/empty arguments) for plain greetings like "Hi" despite the system
+    # prompt explicitly forbidding it. Set high enough to hold system prompt + tools schema
+    # + several turns of history with room to spare for NUM_PREDICT. This does increase
+    # KV-cache RAM usage versus the old (accidental) 2048 default, but far less than
+    # upsizing the model itself would, and the previous default was actively broken.
+    NUM_CTX = 8192
 
     def __init__(self, conversation):
         self.model = get_default_model()
@@ -109,6 +154,13 @@ class OllamaClient:
 
             self.conversation.add_user(user_input)
             self.logger.log_prompt(user_input)
+
+            canned_reply = _match_greeting(user_input)
+            if canned_reply is not None:
+                self.conversation.add_assistant(canned_reply)
+                self.logger.log_response(self.model, canned_reply, [])
+                print(f"\n[AGENT] {canned_reply}")
+                continue
 
             # Re-checked here, not just once at CLIagent.py startup: this week's logs
             # show RAM dropping from a healthy level to under 0.5GB free over the course
@@ -254,7 +306,7 @@ class OllamaClient:
             messages=self.conversation.history(),
             tools=TOOLS_SCHEMA,
             stream=True,
-            options={"num_predict": self.NUM_PREDICT},
+            options={"num_predict": self.NUM_PREDICT, "num_ctx": self.NUM_CTX},
         )
 
         content_parts = []
